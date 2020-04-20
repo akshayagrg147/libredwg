@@ -73,7 +73,7 @@ help (void)
   printf ("  --as rNNNN                save as version\n");
   printf ("           Valid versions:\n");
   printf ("             r1.1, r1.2, r1.3, r1.4, r2.0, r2.10, r2.21, r2.22, r2.4,"
-          "             r2.5, r2.6, r9, r10, r11, r13, r14, r2000 (default)\n");
+          "             r2.5, r2.6, r9, r10, r11, r13, r14, r2000\n");
   printf ("           Planned versions:\n");
   printf ("             r2004-r2021\n");
 #  ifndef DISABLE_JSON
@@ -92,7 +92,7 @@ help (void)
   printf ("  -a rNNNN    save as version\n");
   printf ("              Valid versions:\n");
   printf ("                r1.1, r1.2, r1.3, r1.4, r2.0, r2.10, r2.21, r2.22, r2.4,"
-          "                r2.5, r2.6, r9, r10, r11, r13, r14, r2000 (default)\n");
+          "                r2.5, r2.6, r9, r10, r11, r13, r14, r2000\n");
   printf ("              Planned versions:\n");
   printf ("                r2004-r2021\n");
 #  ifndef DISABLE_JSON
@@ -159,7 +159,7 @@ main (int argc, char *argv[])
         {
           memset (&out_dat, 0, sizeof (out_dat));
           bit_chain_set_version (&out_dat, &dat);
-          out_dat.version = R_2000;
+          dwg.header.version = out_dat.version = dwg.header.from_version;
           out_dat.codepage = dwg.header.codepage;
           if (dwg_encode (&dwg, &out_dat) >= DWG_ERR_CRITICAL)
             exit (0);
@@ -405,20 +405,22 @@ main (int argc, char *argv[])
   free (dat.chain);
   if (infile && dat.fh)
     fclose (dat.fh);
-  if (error >= DWG_ERR_CRITICAL)
+  if (error >= DWG_ERR_CRITICAL || dwg.header.from_version == R_INVALID)
     goto free;
 
   if (dwg_version == R_INVALID)
     {
       dwg_version = dwg.header.from_version;
+      /*
+      // FIXME: for now only r1.4 - R_2000.
       if (dwg_version >= R_2004)
         dwg_version = R_2000;
       else if (dwg_version < R_1_4)
         dwg_version = R_1_4;
+      */
     }
   if (dwg.header.from_version == R_INVALID)
     fprintf (stderr, "Unknown DWG header.from_version");
-  // FIXME: for now only r1.4 - R_2000. later remove this line.
   dat.version = dwg.header.version = dwg_version;
 
   if (!outfile)
