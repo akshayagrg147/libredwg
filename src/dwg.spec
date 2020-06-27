@@ -21,6 +21,7 @@
  * modified by Michal Josef Špaček
  */
 
+#define DWG_SPEC
 #include "spec.h"
 
 /* (1/7) */
