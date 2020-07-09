@@ -3940,7 +3940,14 @@ DWG_TABLE (LTYPE)
         SUB_FIELD_BS (dashes[rcount1],shape_flag, 74);
         if (_obj->dashes[rcount1].shape_flag) // eg BATTING
           {
-            SUB_FIELD_BS (dashes[rcount1],complex_shapecode, 75);
+            if (_obj->dashes[rcount1].shape_flag & 2)
+              {
+                SUB_FIELD_BS (dashes[rcount1],complex_shapecode, 75);
+              }
+            else
+              {
+                VALUE_BS (0, 75);
+              }
             SUB_FIELD_HANDLE (dashes[rcount1],style, 5, 340);
             SUB_FIELD_BD (dashes[rcount1],scale, 46);
             SUB_FIELD_BD (dashes[rcount1],rotation, 50); // absolute or relative
@@ -3952,13 +3959,19 @@ DWG_TABLE (LTYPE)
               }
           }
       } else {
-        SUB_FIELD_BS (dashes[rcount1],complex_shapecode, 75);
-        SUB_FIELD_HANDLE (dashes[rcount1],style, 5, 340);
-        SUB_FIELD_RD (dashes[rcount1],x_offset, 44);
-        SUB_FIELD_RD (dashes[rcount1],y_offset, 45);
-        SUB_FIELD_BD (dashes[rcount1],scale, 46);
-        SUB_FIELD_BD (dashes[rcount1],rotation, 50);
-        SUB_FIELD_BS (dashes[rcount1],shape_flag, 74);
+        SUB_FIELD_RC (dashes[rcount1],shape_flag, 74);
+        if (1 || _obj->dashes[rcount1].shape_flag & 6)
+          {
+            SUB_FIELD_RD (dashes[rcount1],x_offset, 44);
+            SUB_FIELD_RD (dashes[rcount1],y_offset, 45);
+            SUB_FIELD_BD (dashes[rcount1],scale, 46);
+            SUB_FIELD_BD (dashes[rcount1],rotation, 50);
+            SUB_FIELD_HANDLE (dashes[rcount1],style, 5, 340);
+            if (_obj->dashes[rcount1].shape_flag & 4)
+              {
+                SUB_FIELD_BS (dashes[rcount1],complex_shapecode, 75);
+              }
+          }
       }
       DECODER {
         if (FIELD_VALUE (dashes[rcount1].shape_flag) & 2)
