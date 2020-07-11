@@ -1370,7 +1370,7 @@ json_CLASSES (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
           else if (strEQc (key, "dxfname"))
             {
               klass->dxfname = json_string (dat, tokens);
-              if (dwg->header.version >= R_2007)
+              SINCE (R_2007)
                 klass->dxfname_u = bit_utf8_to_TU (klass->dxfname, 0);
               LOG_TRACE ("dxfname: \"%s\"\n", klass->dxfname);
             }

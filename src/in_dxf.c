@@ -1443,7 +1443,7 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
   Dxf_Pair *pair = dxf_read_pair (dat);
   Dwg_Class *klass;
   const int is_binary = dat->opts & DWG_OPTS_DXFB;
-  const char *t_type = dat->version >= R_2007 ? "TU" : "TV";
+  const char *T_type = dat->from_version >= R_2007 ? "TU" : "TV";
 
   while (pair)
     { // read next class
@@ -1494,7 +1494,7 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                       break;
                     }
                   STRADD_TV (klass->dxfname, n);
-                  if (dat->version >= R_2007)
+                  if (dat->from_version >= R_2007)
                     klass->dxfname_u = bit_utf8_to_TU ((char *)n, 0);
                   LOG_TRACE ("CLASS[%d].dxfname = %s [TV 1]\n", i, n);
                 }
@@ -1510,8 +1510,7 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                 {
                   STRADD_T (klass->cppname, pair->value.s);
                 }
-              LOG_TRACE ("CLASS[%d].cppname = %s [%s 2]\n", i, pair->value.s,
-                         t_type);
+              LOG_TRACE ("CLASS[%d].cppname = %s [%s 2]\n", i, pair->value.s, T_type);
               break;
             case 3:
               if (klass->appname)
@@ -1524,8 +1523,7 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                 {
                   STRADD_T (klass->appname, pair->value.s);
                 }
-              LOG_TRACE ("CLASS[%d].appname = %s [%s 3]\n", i, pair->value.s,
-                         t_type);
+              LOG_TRACE ("CLASS[%d].appname = %s [%s 3]\n", i, pair->value.s, T_type);
               break;
             case 90:
               klass->proxyflag = pair->value.l;
