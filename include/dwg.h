@@ -204,9 +204,6 @@ typedef BITCODE_RC BITCODE_4BITS;
 typedef BITCODE_TV BITCODE_D2T;
 #define FORMAT_D2T "%s"
 
-/* TODO: implement version dependent string parsing */
-/* encode codepages/utf8 */
-#define BITCODE_T  BITCODE_TV
 #ifdef HAVE_NATIVE_WCHAR2
   typedef dwg_wchar_t* BITCODE_TU; /* native UCS-2 wchar_t */
 # define FORMAT_TU "\"%ls\""
@@ -214,6 +211,68 @@ typedef BITCODE_TV BITCODE_D2T;
   typedef BITCODE_RS* BITCODE_TU;  /* UCS-2 unicode text */
 # define FORMAT_TU "\"%hn\""       /* will print garbage */
 #endif
+
+/* Version dependent strings */
+/* May not be changed, as it directly maps to the dwg->header.codepage number */
+typedef enum _dwg_codepage
+{
+  CP_UTF8 = 0,
+  CP_US_ASCII = 1,
+  CP_ISO_8859_1,
+  CP_ISO_8859_2,
+  CP_ISO_8859_3,
+  CP_ISO_8859_4,
+  CP_ISO_8859_5,
+  CP_ISO_8859_6,
+  CP_ISO_8859_7,
+  CP_ISO_8859_8,
+  CP_ISO_8859_9,
+  CP_CP437,
+  CP_CP850,
+  CP_CP852,
+  CP_CP855,
+  CP_CP857,
+  CP_CP860,
+  CP_CP861,
+  CP_CP863,
+  CP_CP864,
+  CP_CP865,
+  CP_CP869,
+  CP_CP932,
+  CP_MACINTOSH,
+  CP_BIG5,
+  CP_CP949 = 25,
+  CP_CP866 = 27, /* == JOHAB */
+  CP_ANSI_1250,
+  CP_ANSI_1251 = 29,
+  CP_ANSI_1252 = 30,
+  CP_GB2312 = 31,
+  CP_ANSI_1253,
+  CP_ANSI_1254,
+  CP_ANSI_1255,
+  CP_ANSI_1256,
+  CP_ANSI_1257,
+  CP_ANSI_874,
+  CP_ANSI_932,
+  CP_ANSI_936,
+  CP_ANSI_949,
+  CP_ANSI_950,
+  CP_ANSI_1361,
+  CP_UTF16 = 43,
+  CP_ANSI_1258 = 44,
+  CP_DWG
+} Dwg_Codepage;
+
+typedef struct _dwg_string
+{
+  char *str;
+  BITCODE_RS len;
+  // encoding
+  BITCODE_RS cp; // 30: ANSI_1252, 43: UTF-16, 0: UTF-8. max: 44
+} Dwg_String;
+
+/* encode codepages/utf8 */
+typedef Dwg_String* BITCODE_T;
 
 typedef struct _dwg_time_bll
 {
@@ -1920,7 +1979,7 @@ typedef struct _dwg_entity_VIEWPORT
   BITCODE_BS grid_major;
   BITCODE_BL num_frozen_layers;
   BITCODE_BL status_flag;
-  BITCODE_TV style_sheet;
+  BITCODE_T style_sheet;
   BITCODE_RC render_mode;
   BITCODE_B ucs_at_origin;
   BITCODE_B UCSVP;
@@ -2169,7 +2228,7 @@ typedef struct _dwg_object_DICTIONARY
   BITCODE_BL numitems;    /*!< no DXF */
   BITCODE_RC is_hardowner;/*!< DXF 280 */
   BITCODE_BS cloning;     /*!< DXF 281, ie merge_style */
-  BITCODE_T* texts;       /*!< DXF 3 */
+  BITCODE_T** texts;       /*!< DXF 3 */
   BITCODE_H* itemhandles; /*!< DXF 350/360, pairwise with texts */
 } Dwg_Object_DICTIONARY;
 
@@ -2183,7 +2242,7 @@ typedef struct _dwg_object_DICTIONARYWDFLT
   BITCODE_BL numitems;    /*!< no DXF */
   BITCODE_RC is_hardowner;/*!< DXF 280 */
   BITCODE_BS cloning;     /*!< DXF 281, ie merge_style */
-  BITCODE_T* texts;       /*!< DXF 3 */
+  BITCODE_T** texts;       /*!< DXF 3 */
   BITCODE_H* itemhandles; /*!< DXF 350/360, pairwise with texts */
 
   BITCODE_H defaultid;
@@ -2393,9 +2452,9 @@ typedef struct _dwg_object_BLOCK_HEADER
   BITCODE_B loaded_bit;   /* flag 70 bit 6 */
   BITCODE_BL num_owned;
   BITCODE_3DPOINT base_pt;
-  BITCODE_TV xref_pname;
+  BITCODE_T xref_pname;
   BITCODE_RL num_inserts;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_BL preview_size; /* no DXF. BLL? */
   BITCODE_TF preview;      /* DXF 310. Called PreviewIcon */
   BITCODE_BS insert_units;
@@ -2521,7 +2580,7 @@ typedef struct _dwg_LTYPE_dash {
 typedef struct _dwg_object_LTYPE
 {
   COMMON_TABLE_FIELDS;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_BD pattern_len;
   BITCODE_RC alignment;
   BITCODE_RC numdashes; // can be 0 in r11, even with 12 entries
@@ -2844,7 +2903,7 @@ typedef struct _dwg_object_VX_TABLE_RECORD
 typedef struct _dwg_object_GROUP
 {
   struct _dwg_object_object *parent;
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_BS unnamed;
   BITCODE_BS selectable;
   BITCODE_BL num_groups;
@@ -2866,8 +2925,8 @@ typedef struct _dwg_MLINESTYLE_line
 typedef struct _dwg_object_MLINESTYLE
 {
   struct _dwg_object_object *parent;
-  BITCODE_TV name;
-  BITCODE_TV description;
+  BITCODE_T name;
+  BITCODE_T description;
   BITCODE_BS flag;
   BITCODE_CMC fill_color;
   BITCODE_BD start_angle;
@@ -3092,7 +3151,7 @@ typedef struct _dwg_entity_HATCH
 
   BITCODE_BD elevation;
   BITCODE_BE extrusion;
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_B is_solid_fill;
   BITCODE_B is_associative;
   BITCODE_BL num_paths;
@@ -3219,7 +3278,7 @@ typedef struct _dwg_LEADER_BlockLabel
 {
   struct _dwg_entity_MULTILEADER *parent;
   BITCODE_H attdef;
-  BITCODE_TV label_text;
+  BITCODE_T label_text;
   BITCODE_BS ui_index;
   BITCODE_BD width;
 } Dwg_LEADER_BlockLabel;
@@ -3405,10 +3464,10 @@ typedef struct _dwg_object_MLEADERSTYLE
   BITCODE_B has_dogleg;
   BITCODE_BD landing_gap;
   BITCODE_BD landing_dist;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_H arrow_head;
   BITCODE_BD arrow_head_size;
-  BITCODE_TV text_default;
+  BITCODE_T text_default;
   BITCODE_H text_style;
   BITCODE_BS attach_left;
   BITCODE_BS attach_right;
@@ -4411,7 +4470,7 @@ typedef struct _dwg_object_SCALE
   struct _dwg_object_object *parent;
 
   BITCODE_BS flag; /* 1: is_temporary */
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_BD paper_units;
   BITCODE_BD drawing_units;
   BITCODE_B is_unit_scale;
@@ -5284,7 +5343,7 @@ typedef struct _dwg_DIMASSOC_Ref
   BITCODE_BS main_subent_type; /*!< DXF 73 */
   BITCODE_BL main_gsmarker;    /*!< DXF 91 */
   BITCODE_BS num_xrefpaths;
-  BITCODE_T *xrefpaths;        /*!< DXF 301 */
+  BITCODE_T** xrefpaths;       /*!< DXF 301 */
   BITCODE_B  has_lastpt_ref;   /*!< DXF 75 */
   BITCODE_3BD lastpt_ref;      /*!< DXF ?? */
   BITCODE_BL num_intsectobj;   /*!< DXF 74 */
@@ -7130,7 +7189,7 @@ typedef struct _dwg_object_LAYERFILTER
 {
   struct _dwg_object_object *parent;
   BITCODE_BL num_names;
-  BITCODE_T *names;
+  BITCODE_T** names;
 } Dwg_Object_LAYERFILTER;
 
 typedef struct _dwg_entity_ARCALIGNEDTEXT
@@ -7263,7 +7322,7 @@ typedef  struct _dwg_BLOCKPARAMETER_PropInfo {
   Dwg_BLOCKPARAMETER_connection *connections;
 } Dwg_BLOCKPARAMETER_PropInfo;
 
-typedef  struct _dwg_BLOCKPARAMVALUESET {
+typedef  struct dwg_BLOCKPARAMVALUESET {
   BITCODE_T desc;
   BITCODE_BL flags;
   BITCODE_BD minimum;
@@ -7622,7 +7681,7 @@ typedef struct _dwg_object_BLOCKLOOKUPACTION
   BITCODE_BL numrows; /* DXF 92 */
   BITCODE_BL numcols; /* DXF 93 */
   Dwg_BLOCKLOOKUPACTION_lut *lut;
-  BITCODE_T *exprs;
+  BITCODE_T** exprs;
   BITCODE_B b280;
 } Dwg_Object_BLOCKLOOKUPACTION;
 
@@ -7837,7 +7896,7 @@ typedef struct _dwg_entity_POINTCLOUD
   BITCODE_3BD origin;		/*!< DXF 10 */
   BITCODE_T saved_filename; 	/* DXF 1 */
   BITCODE_BL num_source_files;  /* DXF 90 */
-  BITCODE_T *source_files;	/*!< DXF 2 */
+  BITCODE_T** source_files;	/*!< DXF 2 */
   BITCODE_3BD extents_min;	/*!< DXF 11 */
   BITCODE_3BD extents_max;	/*!< DXF 12 */
   BITCODE_RLL numpoints;	/*!< DXF 92 */
@@ -9791,9 +9850,9 @@ EXPORT BITCODE_H dwg_find_dicthandle_objname (Dwg_Data *restrict dwg, BITCODE_H 
 EXPORT char *dwg_find_table_extname (Dwg_Data *restrict dwg,
                                      Dwg_Object *restrict obj);
 /* Returns the string value of the member of the AcDbVariableDictionary.
-   The name is ascii. E.g. LIGHTINGUNITS => "0" */
-EXPORT char *dwg_variable_dict (Dwg_Data *restrict dwg,
-                                const char *restrict name);
+   E.g. LIGHTINGUNITS => "0" */
+EXPORT BITCODE_T *dwg_variable_dict (Dwg_Data *restrict dwg,
+                                     const char *restrict name);
 
 EXPORT double dwg_model_x_min (const Dwg_Data *restrict);
 EXPORT double dwg_model_x_max (const Dwg_Data *restrict);
