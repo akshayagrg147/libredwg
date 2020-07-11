@@ -322,7 +322,11 @@ main (int argc, char *argv[])
   // allow stdin, but require -I|--format then
   memset (&dwg, 0, sizeof (Dwg_Data));
   dat.opts = dwg.opts = opts;
-  dat.version = R_2000; // initial target for the importer
+  // set target version already for the importer
+  if (version)
+    dat.version = dwg.header.version = dwg_version;
+  else
+    dat.version = dwg.header.version = R_2000;
 
   if (infile)
     {
