@@ -22,7 +22,9 @@
   // to be done after encryption, resp. before when encoding
   SINCE (R_2004) {
     IF_ENCODE_FROM_EARLIER {
+      memcpy (_obj->file_ID_string, "AcFssFcAJMB", 12);
       FIELD_VALUE (header_size) = 108;
+      FIELD_VALUE (unknown_long) = 1;
       FIELD_VALUE (x04) = 4;
       FIELD_VALUE (x20) = 0x20;
       FIELD_VALUE (x80) = 0x80;

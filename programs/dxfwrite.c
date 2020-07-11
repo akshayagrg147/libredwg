@@ -295,21 +295,42 @@ main (int argc, char *argv[])
         dwg.header.version = dat.version = dwg_version;
 
       if (infile)
-        {
-          struct stat attrib;
-          if (stat (infile, &attrib)) // not exists
-            {
-              fprintf (stderr, "Missing input file '%s'\n", infile);
-              exit (1);
-            }
-          dat.fh = fopen (infile, "r");
-          if (!dat.fh)
-            {
-              fprintf (stderr, "Could not read file '%s'\n", infile);
-              exit (1);
-            }
-          dat.size = attrib.st_size;
-        }
+        fclose (dat.fh);
+      free (dat.chain);
+      exit (1);
+    }
+
+  free (dat.chain);
+  dat.size = 0;
+  if (infile && dat.fh)
+    {
+      fclose (dat.fh);
+      dat.fh = NULL;
+    }
+  if (error >= DWG_ERR_CRITICAL)
+    goto free;
+
+  if (!version)
+    dat.version = dwg.header.version = dwg.header.from_version;
+  dat.from_version = dwg.header.from_version;
+  if (minimal)
+    dwg.opts |= DWG_OPTS_MINIMAL;
+  dwg.opts |= opts;
+
+  if (!outfile)
+    {
+      outfile = suffix (infile, "dxf");
+      free_outfile = 1;
+    }
+
+  if (opts > 1)
+    {
+      fprintf (stderr, "Writing %s%sDXF file %s", minimal ? "minimal " : "",
+               binary ? "binary " : "", outfile);
+      if (version)
+        fprintf (stderr, " (from %s to %s)\n",
+                 dwg_version_type (dwg.header.from_version),
+                 dwg_version_type (dwg.header.version));
       else
         dat.fh = stdin;
 
