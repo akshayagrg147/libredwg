@@ -202,11 +202,23 @@ dwg_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
   FILE *fp;
   struct_stat_t attrib;
   Bit_Chain bit_chain = { 0 };
+  Dwg_Version_Type version;
   int error;
 
-  loglevel = dwg->opts & DWG_OPTS_LOGLEVEL;
+  if (!dwg)
+    {
+      dwg = malloc (sizeof (Dwg_Data));
+      loglevel = 0;
+      version = R_INVALID;
+    }
+  else
+    {
+      loglevel = dwg->opts & DWG_OPTS_LOGLEVEL;
+      version = dwg->header.version;
+    }
   memset (dwg, 0, sizeof (Dwg_Data));
   dwg->opts = loglevel;
+  dwg->header.version = version;
 
   if (strEQc (filename, "-"))
     {
@@ -291,10 +303,22 @@ dxf_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
   FILE *fp;
   struct_stat_t attrib;
   size_t size;
+  int opts = 0;
+  Dwg_Version_Type version = R_INVALID;
   Bit_Chain dat = { 0 };
   Dwg_Version_Type version;
 
-  loglevel = dwg->opts & DWG_OPTS_LOGLEVEL;
+  if (!dwg)
+    {
+      dwg = malloc (sizeof (Dwg_Data));
+      loglevel = 0;
+    }
+  else
+    {
+      opts = dwg->opts;
+      loglevel = dwg->opts & DWG_OPTS_LOGLEVEL;
+      version = dwg->header.version;
+    }
 
   if (!filename || stat (filename, &attrib))
     {
@@ -321,8 +345,8 @@ dxf_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
    */
   version = dwg->header.version;
   memset (dwg, 0, sizeof (Dwg_Data));
-  dwg->opts = loglevel | DWG_OPTS_INDXF;
-  dwg->header.version = version;
+  dwg->opts = opts | DWG_OPTS_INDXF;
+  dwg->header.version = version; // target version
 
   memset (&dat, 0, sizeof (Bit_Chain));
 #  ifdef HAVE_SYS_STAT_H

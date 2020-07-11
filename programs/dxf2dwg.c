@@ -183,7 +183,7 @@ main (int argc, char *argv[])
   char *filename_in;
   const char *version = NULL;
   char *filename_out = NULL;
-  Dwg_Version_Type dwg_version = R_2000;
+  Dwg_Version_Type dwg_version = R_INVALID;
   int do_free = 0;
   int need_free = 0;
   int c;
@@ -318,7 +318,11 @@ main (int argc, char *argv[])
         }
 
       dwg.opts = opts;
-      dwg.header.version = dwg_version;
+      // set target version already for the importer
+      if (version)
+        dwg.header.version = dwg_version;
+      else
+        dwg.header.version = R_2000;
       printf ("Reading DXF file %s\n", filename_in);
       error = dxf_read_file (filename_in, &dwg);
       if (error >= DWG_ERR_CRITICAL)
@@ -336,14 +340,14 @@ main (int argc, char *argv[])
           printf (" as %s\n", version);
           dwg.header.version = dwg_version;
           if (dwg_version > R_2000)
-            printf ("Warning: encode currently only works for R13-R2000.\n");
+            printf ("Warning: encode currently only works for R1.4-R2000.\n");
           if (dwg.header.from_version == R_INVALID)
             dwg.header.from_version = dwg.header.version;
         }
       else
         {
-          // FIXME: for now only R_13b1 - R_2000. later remove this line.
-          if (dwg.header.from_version < R_13b1
+          // FIXME: for now only <=R_2000. later remove this line.
+          if (dwg.header.from_version < R_1_4
               || dwg.header.from_version >= R_2004)
             dwg.header.version = dwg_version;
           if (dwg.header.from_version == R_INVALID)
