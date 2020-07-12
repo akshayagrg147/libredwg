@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <unistd.h> // ftruncate
 #include <math.h>
 #include <assert.h>
 #include <errno.h>
@@ -3712,6 +3713,12 @@ bit_search_sentinel (Bit_Chain *dat, const unsigned char sentinel[16])
 void
 bit_chain_init (Bit_Chain *dat, const size_t size)
 {
+  if (dat->opts & DWG_OPTS_MMAP)
+    {
+      dat->size = size;
+      ftruncate (fileno (dat->fh), dat->size);
+      return;
+    }
   GCC14_DIAG_IGNORE (-Wanalyzer-malloc-leak)
   dat->chain = (unsigned char *)calloc (1, size);
   if (!dat->chain)
@@ -3741,6 +3748,12 @@ bit_chain_init_dat (Bit_Chain *restrict dat, const size_t size,
 void
 bit_chain_alloc_size (Bit_Chain *dat, const size_t size)
 {
+  if (dat->opts & DWG_OPTS_MMAP)
+    {
+      dat->size += CHAIN_BLOCK;
+      ftruncate (fileno (dat->fh), dat->size);
+      return;
+    }
   if (dat->size == 0 || !dat->chain)
     {
       bit_chain_init (dat, size);
