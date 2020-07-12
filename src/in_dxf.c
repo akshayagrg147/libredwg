@@ -1508,7 +1508,8 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                 }
               if (pair->value.s)
                 {
-                  STRADD_T (klass->cppname, pair->value.s);
+                  // HACK
+                  STRADD_TV (klass->cppname, pair->value.s);
                 }
               LOG_TRACE ("CLASS[%d].cppname = %s [%s 2]\n", i, pair->value.s,
                          t_type);
@@ -1522,7 +1523,8 @@ dxf_classes_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                 }
               if (pair->value.s)
                 {
-                  STRADD_T (klass->appname, pair->value.s);
+                  // HACK
+                  STRADD_TV (klass->appname, pair->value.s);
                 }
               LOG_TRACE ("CLASS[%d].appname = %s [%s 3]\n", i, pair->value.s,
                          t_type);
@@ -3419,7 +3421,7 @@ add_HATCH (Dwg_Object *restrict obj, Bit_Chain *restrict dat,
             return NULL;
           assert (j >= 0);
           assert (j < (int)o->num_colors);
-          if (dat->version >= R_2007)
+          SINCE (R_2007)
             o->colors[j].color.name
                 = (BITCODE_T)bit_utf8_to_TU (pair->value.s, 0);
           else
@@ -3938,7 +3940,7 @@ add_MULTILEADER (Dwg_Object *restrict obj, Bit_Chain *restrict dat,
                 {
                   if (ctx->has_content_blk)
                     goto unknown_mleader;
-                  if (dat->version >= R_2007)
+                  SINCE (R_2007)
                     ctx->content.txt.default_text
                         = (char *)bit_utf8_to_TU (pair->value.s, 0);
                   else
@@ -4508,7 +4510,7 @@ add_CellStyle (Dwg_Object *restrict obj, Dwg_CellStyle *o, const char *key,
         case 300:
           if (mode == CONTENTFORMAT)
             {
-              if (obj->parent->header.version >= R_2007)
+              SINCE (R_2007)
                 o->content_format.value_format_string
                     = (BITCODE_T)bit_utf8_to_TU (pair->value.s, 0);
               else
@@ -6169,7 +6171,7 @@ new_table_control (const char *restrict name, Bit_Chain *restrict dat,
   Dxf_Pair *pair = NULL;
   Dwg_Object_LTYPE_CONTROL *_obj = NULL; // the largest
   int j = 0;
-  int is_tu = dwg->header.version >= R_2007 ? 1 : 0;
+  int is_tu = dwg->header.from_version >= R_2007 ? 1 : 0;
   char *fieldname;
   char ctrlname[80];
   char *dxfname;
@@ -6245,7 +6247,7 @@ new_table_control (const char *restrict name, Bit_Chain *restrict dat,
     dwg_dynapi_entity_set_value (_obj, obj->name, "is_xref_ref", &is_xref_ref,
                                  1);
   // default is_xdic_missing
-  if (dwg->header.version >= R_2004)
+  if (dwg->header.from_version >= R_2004)
     obj->tio.object->is_xdic_missing = 1;
 
   pair = dxf_read_pair (dat);
@@ -6405,7 +6407,7 @@ do_return:
   if (!obj->tio.object->xdicobjhandle)
     {
       obj->tio.object->is_xdic_missing = 1;
-      if (dwg->header.version >= R_13b1 && dwg->header.version < R_2004)
+      if (dwg->header.from_version >= R_13b1 && dwg->header.from_version < R_2004)
         obj->tio.object->xdicobjhandle = dwg_add_handleref (dwg, 3, 0, obj);
     }
   return pair;
@@ -6519,8 +6521,7 @@ add_xdata (Bit_Chain *restrict dat, Dwg_Object *restrict obj,
     case DWG_VT_STRING:
       if (!pair->value.s)
         goto invalid;
-      PRE (R_2007) // TODO: nice would be the proper target version.
-                   // dat->version
+      PRE (R_2007)
       {
         Dwg_Data *dwg = obj->parent;
         size_t length = strlen (pair->value.s);
@@ -8326,7 +8327,7 @@ dxf_postprocess_LAYOUT (Dwg_Object *restrict obj)
   Dwg_Data *dwg = obj->parent;
   Dwg_Object_LAYOUT *_obj = obj->tio.object->tio.LAYOUT;
 
-  if (dwg->header.version < R_2004)
+  if (dwg->header.from_version < R_2004)
     {
       _obj->plotsettings.plotview = dwg_find_tablehandle (
           dwg, _obj->plotsettings.plotview_name, "PLOTSETTINGS");
@@ -8346,7 +8347,7 @@ dxf_postprocess_PLOTSETTINGS (Dwg_Object *restrict obj)
   Dwg_Data *dwg = obj->parent;
   Dwg_Object_PLOTSETTINGS *_obj = obj->tio.object->tio.PLOTSETTINGS;
 
-  if (dwg->header.version < R_2004)
+  if (dwg->header.from_version < R_2004)
     {
       _obj->plotview = dwg_find_tablehandle (dwg, _obj->plotview_name, "VIEW");
       /*
@@ -11121,7 +11122,7 @@ new_object (char *restrict name, char *restrict dxfname,
 
                       // 3DD scale
                       if (strEQc (f->name, "scale")
-                          && dwg->header.version >= R_2000
+                          && dwg->header.from_version >= R_2000
                           && dwg_dynapi_entity_field (obj->name, "scale_flag")
                           && dwg_dynapi_entity_value (_obj, obj->name,
                                                       "scale_flag",
@@ -11142,7 +11143,7 @@ new_object (char *restrict name, char *restrict dxfname,
                       // 3DFACE.z_is_zero
                       else if (strEQc (name, "_3DFACE")
                                && strEQc (f->name, "corner1")
-                               && dwg->header.version >= R_2000 && pt.z == 0.0)
+                               && dwg->header.from_version >= R_2000 && pt.z == 0.0)
                         {
                           BITCODE_B z_is_zero = 1;
                           dwg_dynapi_entity_set_value (
@@ -11383,7 +11384,7 @@ new_object (char *restrict name, char *restrict dxfname,
                                                            &handle, 0);
                             }
                           if (is_entity && pair->code == 6 && pair->value.s
-                              && dwg->header.version >= R_2000)
+                              && dwg->header.from_version >= R_2000)
                             {
                               BITCODE_BB flags = 3;
                               if (!strcasecmp (pair->value.s, "BYLAYER"))
@@ -11398,7 +11399,7 @@ new_object (char *restrict name, char *restrict dxfname,
                                          "ltype_flags", flags);
                             }
                           if (is_entity && pair->code == 390
-                              && dwg->header.version >= R_2000)
+                              && dwg->header.from_version >= R_2000)
                             {
                               BITCODE_BB flags = 3;
                               // eg. plotstyle: (5.2.765) abs:765 [H 390]
@@ -11412,7 +11413,7 @@ new_object (char *restrict name, char *restrict dxfname,
                                          "plotstyle_flags", flags);
                             }
                           if (is_entity && pair->code == 347
-                              && dwg->header.version >= R_2007)
+                              && dwg->header.from_version >= R_2007)
                             {
                               BITCODE_BB flags = 3;
                               handle = dwg_add_handleref (dwg, 5,
@@ -11575,7 +11576,7 @@ new_object (char *restrict name, char *restrict dxfname,
                 {
                   Dwg_Entity_PROXY_ENTITY *o
                       = obj->tio.entity->tio.PROXY_ENTITY;
-                  if (dwg->header.version <= R_14)
+                  if (dwg->header.from_version <= R_14)
                     {
                       if (pair->code == 90)
                         o->class_id = pair->value.i;
@@ -11629,7 +11630,7 @@ new_object (char *restrict name, char *restrict dxfname,
                           o->color.book_name = NULL;
                           LOG_TRACE ("%s.color.name = %s [%s %d]\n", name,
                                      pair->value.s, "CMC", pair->code);
-                          if (dwg->header.version >= R_2007)
+                          SINCE (R_2007)
                             {
                               char *tmp = o->color.name;
                               o->color.name = (BITCODE_T)bit_utf8_to_TU (
@@ -11642,7 +11643,7 @@ new_object (char *restrict name, char *restrict dxfname,
                           o->color.flag = 3;
                           o->color.name = strdup (x + 1);
                           x[0] = '\0';
-                          if (dwg->header.version >= R_2007)
+                          SINCE (R_2007)
                             {
                               char *tmp = o->color.book_name;
                               o->color.book_name = (BITCODE_T)bit_utf8_to_TU (
@@ -11715,7 +11716,7 @@ new_object (char *restrict name, char *restrict dxfname,
   else if (obj->type == DWG_TYPE_PLOTSETTINGS)
     dxf_postprocess_PLOTSETTINGS (obj);
   // set defaults not in dxf:
-  else if (obj->type == DWG_TYPE__3DFACE && dwg->header.version >= R_2000)
+  else if (obj->type == DWG_TYPE__3DFACE && dwg->header.from_version >= R_2000)
     {
       Dwg_Entity__3DFACE *o = obj->tio.entity->tio._3DFACE;
       o->has_no_flags = 1;
@@ -11834,26 +11835,23 @@ dxf_tables_read (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
                            && obj->handle.value
                                   == _ctrl->byblock->absolute_ref)
                     i--;
-                  else
+                  else if (dwg->header.from_version > R_2004 && _obj->name
+                           && _obj->has_strings_area)
                     {
-                      if (dwg->header.version > R_2004 && _obj->name
-                          && _obj->has_strings_area)
+                      _obj->strings_area = (BITCODE_TF)xcalloc (512, 1);
+                      if (!_obj->strings_area)
                         {
-                          _obj->strings_area = (BITCODE_TF)xcalloc (512, 1);
-                          if (!_obj->strings_area)
-                            {
-                              free (dxfname);
-                              goto outofmem;
-                            }
+                          free (dxfname);
+                          goto outofmem;
                         }
-                      if (dwg->header.version <= R_2004)
+                    }
+                  if (dwg->header.from_version <= R_2004)
+                    {
+                      _obj->strings_area = (BITCODE_TF)xcalloc (256, 1);
+                      if (!_obj->strings_area)
                         {
-                          _obj->strings_area = (BITCODE_TF)xcalloc (256, 1);
-                          if (!_obj->strings_area)
-                            {
-                              free (dxfname);
-                              goto outofmem;
-                            }
+                          free (dxfname);
+                          goto outofmem;
                         }
                     }
                 }
@@ -12574,18 +12572,18 @@ resolve_header_dicts (Dwg_Data *restrict dwg)
   // only possible after OBJECTS
   CHECK_DICTIONARY_HDR (ACAD_GROUP)
   CHECK_DICTIONARY_HDR (ACAD_MLINESTYLE)
-  if (dwg->header.version >= R_2000)
+  if (dwg->header.from_version >= R_2000)
     {
       CHECK_DICTIONARY_HDR (LAYOUT)
       CHECK_DICTIONARY_HDR (PLOTSETTINGS)
       CHECK_DICTIONARY_HDR (PLOTSTYLENAME)
     }
-  if (dwg->header.version >= R_2004)
+  if (dwg->header.from_version >= R_2004)
     {
       CHECK_DICTIONARY_HDR (MATERIAL)
       CHECK_DICTIONARY_HDR (COLOR)
     }
-  if (dwg->header.version >= R_2007)
+  if (dwg->header.from_version >= R_2007)
     {
       CHECK_DICTIONARY_HDR (VISUALSTYLE)
     }

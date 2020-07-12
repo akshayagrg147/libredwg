@@ -27,6 +27,9 @@
 #undef SINCE
 #undef UNTIL
 #undef RESET_VER
+
+#ifdef IS_DECODER
+
 #define VERSION(v)                                                            \
   cur_ver = v;                                                                \
   if (dat->from_version == v)
@@ -36,18 +39,37 @@
 #define VERSIONS(v1, v2)                                                      \
   cur_ver = v1;                                                               \
   if (dat->from_version >= v1 && dat->from_version <= v2)
-#define OTHER_VERSIONS else
 #define PRE(v)                                                                \
   cur_ver = v;                                                                \
   if (dat->from_version < v)
 #define SINCE(v)                                                              \
   cur_ver = v;                                                                \
   if (dat->from_version >= v)
-#define PRIOR_VERSIONS else
 #define UNTIL(v)                                                              \
   cur_ver = v;                                                                \
   if (dat->from_version <= v)
-#define LATER_VERSIONS else
 #define RESET_VER cur_ver = dat->from_version;
+
+#else
+
+#define VERSION(v)                                                            \
+  if (dat->from_version == v)
+#define NOT_VERSION(v)                                                        \
+  if (dat->from_version != v)
+#define VERSIONS(v1, v2)                                                      \
+  if (dat->from_version >= v1 && dat->from_version <= v2)
+#define PRE(v)                                                                \
+  if (dat->from_version < v)
+#define SINCE(v)                                                              \
+  if (dat->from_version >= v)
+#define UNTIL(v)                                                              \
+  if (dat->from_version <= v)
+#define RESET_VER cur_ver = dat->from_version;
+
+#endif
+
+#define OTHER_VERSIONS else
+#define PRIOR_VERSIONS else
+#define LATER_VERSIONS else
 
 #endif
