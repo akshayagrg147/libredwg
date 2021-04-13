@@ -36,8 +36,8 @@
 char *basename (char *);
 #endif
 
-#include "bits.h"
 #include "common.h"
+#include "bits.h"
 #include "decode.h"
 #include "dwg.h"
 #include "hash.h"
@@ -92,7 +92,7 @@ dat_read_file (Bit_Chain *restrict dat, FILE *restrict fp,
       if (fd >= 0 && !fstat (fd, &attrib))
         dat->size = attrib.st_size;
     }
-  dat->chain = (unsigned char *)calloc (1, dat->size + 1);
+  dat->chain = (unsigned char *)CALLOC (1, dat->size + 1);
   if (!dat->chain)
     {
       loglevel = dat->opts & DWG_OPTS_LOGLEVEL;
@@ -108,7 +108,7 @@ dat_read_file (Bit_Chain *restrict dat, FILE *restrict fp,
       LOG_ERROR ("Could not read file (%zu out of %zu): %s\n", size, dat->size,
                  filename)
       fclose (fp);
-      free (dat->chain);
+      FREE (dat->chain);
       dat->chain = NULL;
       dat->size = 0;
       return DWG_ERR_IOERROR;
@@ -123,9 +123,9 @@ EXPORT int
 dat_read_size (Bit_Chain *restrict dat)
 {
   if (!dat->chain)
-    dat->chain = (unsigned char *)calloc (1, dat->size + 2);
+    dat->chain = (unsigned char *)CALLOC (1, dat->size + 2);
   else
-    dat->chain = (unsigned char *)realloc (dat->chain, dat->size + 2);
+    dat->chain = (unsigned char *)REALLOC (dat->chain, dat->size + 2);
   if (!dat->chain)
     {
       loglevel = dat->opts & DWG_OPTS_LOGLEVEL;
@@ -136,7 +136,7 @@ dat_read_size (Bit_Chain *restrict dat)
   if (fread (dat->chain, 1, dat->size, dat->fh) != dat->size)
     {
       fclose (dat->fh);
-      free (dat->chain);
+      FREE (dat->chain);
       dat->chain = NULL;
       return DWG_ERR_IOERROR;
     }
@@ -153,10 +153,10 @@ dat_read_stream (Bit_Chain *restrict dat, FILE *restrict fp)
   do
     {
       if (dat->chain)
-        dat->chain = (unsigned char *)realloc (dat->chain, dat->size + 4096);
+        dat->chain = (unsigned char *)REALLOC (dat->chain, dat->size + 4096);
       else
         {
-          dat->chain = (unsigned char *)calloc (1, 4096);
+          dat->chain = (unsigned char *)CALLOC (1, 4096);
           dat->size = 0;
         }
       if (!dat->chain)
@@ -175,16 +175,16 @@ dat_read_stream (Bit_Chain *restrict dat, FILE *restrict fp)
       LOG_ERROR ("Could not read from stream (%zu out of %zu)\n", size,
                  dat->size);
       fclose (fp);
-      free (dat->chain);
+      FREE (dat->chain);
       dat->chain = NULL;
       return DWG_ERR_IOERROR;
     }
 
-  // clear the slack and realloc
+  // clear the slack and REALLOC
   size = dat->size & 0xfff;
   if (size)
     memset (&dat->chain[dat->size], 0, 0xfff - size);
-  dat->chain = (unsigned char *)realloc (dat->chain, dat->size + 1);
+  dat->chain = (unsigned char *)REALLOC (dat->chain, dat->size + 1);
   // ensure NULL termination, for sscanf, strtol and friends.
   dat->chain[dat->size] = '\0';
   return 0;
@@ -261,7 +261,7 @@ dwg_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
   if (error >= DWG_ERR_CRITICAL)
     {
       LOG_ERROR ("Failed to decode file: %s 0x%x\n", filename, error)
-      free (bit_chain.chain);
+      FREE (bit_chain.chain);
       bit_chain.chain = NULL;
       bit_chain.size = 0;
       return error;
@@ -269,7 +269,7 @@ dwg_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
 
   // TODO: does dwg hold any char* pointers to the bit_chain or are they all
   // copied?
-  free (bit_chain.chain);
+  FREE (bit_chain.chain);
   bit_chain.chain = NULL;
   bit_chain.size = 0;
 
@@ -328,7 +328,7 @@ dxf_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
 #  ifdef HAVE_SYS_STAT_H
   dat.size = attrib.st_size;
 #  endif
-  dat.chain = (unsigned char *)calloc (1, dat.size + 2);
+  dat.chain = (unsigned char *)CALLOC (1, dat.size + 2);
   if (!dat.chain)
     {
       LOG_ERROR ("Not enough memory.\n");
@@ -347,7 +347,7 @@ dxf_read_file (const char *restrict filename, Dwg_Data *restrict dwg)
     {
       LOG_ERROR ("Could not read the entire file (%zu out of %zu): %s\n", size,
                  dat.size, filename)
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
       return DWG_ERR_IOERROR;
@@ -363,7 +363,7 @@ ENDSEC
   if (size < 31)
     {
       LOG_ERROR ("File %s too small, %zu byte.\n", filename, size)
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
       return DWG_ERR_IOERROR;
@@ -381,7 +381,7 @@ ENDSEC
       || !memcmp (dat.chain, "AC2.10", 4) || !memcmp (dat.chain, "MC0.0", 4))
     {
       LOG_ERROR ("This is a DWG, not a DXF file: %s\n", filename)
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
       return DWG_ERR_INVALIDDWG;
@@ -400,14 +400,14 @@ ENDSEC
   if (error >= DWG_ERR_CRITICAL)
     {
       LOG_ERROR ("Failed to decode DXF file: %s\n", filename)
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
       return error;
     }
 
   // TODO: does dwg hold any char* pointers to the dat or are they all copied?
-  free (dat.chain);
+  FREE (dat.chain);
   dat.chain = NULL;
   dat.size = 0;
 
@@ -451,7 +451,7 @@ dwg_write_file (const char *restrict filename, const Dwg_Data *restrict dwg)
 #  ifdef IS_RELEASE
       if (dat.size > 0)
         {
-          free (dat.chain);
+          FREE (dat.chain);
           dat.chain = NULL;
           dat.size = 0;
         }
@@ -483,7 +483,7 @@ dwg_write_file (const char *restrict filename, const Dwg_Data *restrict dwg)
     {
       LOG_ERROR ("Failed to write data into the file: %s\n", filename)
       fclose (fh);
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
       return error | DWG_ERR_IOERROR;
@@ -492,7 +492,7 @@ dwg_write_file (const char *restrict filename, const Dwg_Data *restrict dwg)
 
   if (dat.size > 0)
     {
-      free (dat.chain);
+      FREE (dat.chain);
       dat.chain = NULL;
       dat.size = 0;
     }
@@ -723,7 +723,7 @@ dwg_get_layers (const Dwg_Data *dwg)
   _ctrl = ctrl->tio.object->tio.LAYER_CONTROL;
   assert (_ctrl);
   layers
-      = (Dwg_Object_LAYER **)calloc (num_layers, sizeof (Dwg_Object_LAYER *));
+      = (Dwg_Object_LAYER **)CALLOC (num_layers, sizeof (Dwg_Object_LAYER *));
   for (i = 0; i < num_layers; i++)
     {
       Dwg_Object *obj = dwg_ref_object ((Dwg_Data *)dwg, _ctrl->entries[i]);
@@ -762,7 +762,7 @@ dwg_get_entities (const Dwg_Data *dwg)
   Dwg_Object_Entity **entities;
 
   assert (dwg);
-  entities = (Dwg_Object_Entity **)calloc (dwg_get_num_entities (dwg),
+  entities = (Dwg_Object_Entity **)CALLOC (dwg_get_num_entities (dwg),
                                            sizeof (Dwg_Object_Entity *));
   for (i = 0; i < dwg->num_objects; i++)
     {
@@ -1545,7 +1545,7 @@ get_last_owned_block (const Dwg_Object *restrict hdr)
               if (!_hdr->endblk_entity)
                 {
                   _hdr->endblk_entity
-                      = (BITCODE_H)calloc (1, sizeof (Dwg_Object_Ref));
+                      = (BITCODE_H)CALLOC (1, sizeof (Dwg_Object_Ref));
                   if (_hdr->endblk_entity)
                     {
                       _hdr->endblk_entity->obj = obj;
@@ -2164,11 +2164,11 @@ dwg_dup_handleref (Dwg_Data *restrict dwg, const Dwg_Object_Ref *restrict ref)
     return dwg_add_handleref (dwg, 5, 0, NULL);
 }
 
-// Creates a non-global, free'able handle ref.
+// Creates a non-global, FREE'able handle ref.
 EXPORT Dwg_Object_Ref *
 dwg_add_handleref_free (const BITCODE_RC code, const BITCODE_RLL absref)
 {
-  Dwg_Object_Ref *ref = (Dwg_Object_Ref *)calloc (1, sizeof (Dwg_Object_Ref));
+  Dwg_Object_Ref *ref = (Dwg_Object_Ref *)CALLOC (1, sizeof (Dwg_Object_Ref));
   dwg_add_handle (&ref->handleref, code, absref, NULL);
   return ref;
 }
@@ -2237,11 +2237,11 @@ dwg_find_dictionary (Dwg_Data *restrict dwg, const char *restrict name)
           // relative? (8.0.0, 6.0.0, ...)
           dwg_resolve_handleref (ref, obj);
           if (IS_FROM_TU_DWG (dwg))
-            free (u8);
+            FREE (u8);
           return dwg_add_handleref (dwg, 5, ref->absolute_ref, NULL);
         }
       if (IS_FROM_TU_DWG (dwg))
-        free (u8);
+        FREE (u8);
     }
   LOG_TRACE ("dwg_find_dictionary: DICTIONARY with %s not found\n", name)
   return NULL;
@@ -2344,11 +2344,11 @@ dwg_find_dicthandle_objname (Dwg_Data *restrict dwg, BITCODE_H dict,
           && (strEQ (name, hdlname) || !strcasecmp (name, hdlname)))
         {
           if (isnew)
-            free (hdlname);
+            FREE (hdlname);
           return hdlv[i];
         }
       if (ok && isnew && hdlname)
-        free (hdlname);
+        FREE (hdlname);
     }
   return NULL;
 }
@@ -2560,7 +2560,7 @@ dwg_ctrl_table (Dwg_Data *restrict dwg, const char *restrict table)
 
 // Search for name in associated table, and return its handle.
 // Note that newer tables, like MATERIAL are stored in a DICTIONARY instead.
-// Note that we cannot set the ref->obj here, as it may still move by realloc
+// Note that we cannot set the ref->obj here, as it may still move by REALLOC
 // dwg->object[]
 // See also the silent variant: dwg_find_tablehandle_silent()
 EXPORT BITCODE_H
@@ -2660,11 +2660,11 @@ dwg_find_tablehandle (Dwg_Data *restrict dwg, const char *restrict name,
         {
           LOG_INSANE ("Found %s\n", name);
           if (isnew)
-            free (hdlname);
+            FREE (hdlname);
           return hdlv[i];
         }
       if (ok && isnew && hdlname)
-        free (hdlname);
+        FREE (hdlname);
     }
 
   LOG_INSANE ("Not found in %u APPID entries\n", num_entries);
@@ -2764,7 +2764,7 @@ dwg_handle_name (Dwg_Data *restrict dwg, const char *restrict table,
       if (ok)
         {
           if (!isnew && hdlname)
-            return strdup (hdlname);
+            return STRDUP (hdlname);
           else
             return hdlname;
         }
@@ -3242,7 +3242,7 @@ dwg_set_next_objhandle (Dwg_Object *obj)
 }
 
 // <path-to>/dxf.ext => copy of "dxf", "ext"
-// returns a malloc'ed copy of basename without extension, and
+// returns a MALLOC'ed copy of basename without extension, and
 // sets ext to the char behind the last "." of basename
 ATTRIBUTE_MALLOC
 char *
@@ -3254,7 +3254,7 @@ split_filepath (const char *filepath, char **extp)
   if (!filepath)
     return NULL;
 #endif
-  copy = strdup (filepath);
+  copy = STRDUP (filepath);
 #ifdef HAVE_BASENAME
   base = basename (copy);
 #else
@@ -3345,11 +3345,11 @@ dwg_sections_init (Dwg_Data *dwg)
 
   if (dwg->header.section)
     // zero-based
-    dwg->header.section = (Dwg_Section *)realloc (
+    dwg->header.section = (Dwg_Section *)REALLOC (
         dwg->header.section,
         sizeof (Dwg_Section) * (dwg->header.num_sections + 1));
   else
-    dwg->header.section = (Dwg_Section *)calloc (sizeof (Dwg_Section),
+    dwg->header.section = (Dwg_Section *)CALLOC (sizeof (Dwg_Section),
                                                  dwg->header.num_sections + 1);
   if (!dwg->header.section)
     {

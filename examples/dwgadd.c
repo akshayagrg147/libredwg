@@ -177,6 +177,7 @@ main (int argc, char *argv[])
           { NULL, 0, NULL, 0 } };
 #endif
 
+  GC_INIT ();
   if (argc <= 1 || !*argv[1])
     return usage ();
   memset (&opt, 0, sizeof (struct opt_s));
@@ -301,7 +302,7 @@ main (int argc, char *argv[])
   if (dat.size == 0)
     {
       LOG_ERROR ("empty %s", argv[i])
-      free (dat.chain);
+      FREE (dat.chain);
       exit (1);
     }
 
@@ -364,8 +365,8 @@ main (int argc, char *argv[])
         }
       if (!opt.dwg)
         fclose (out_dat.fh);
-      free (out_dat.chain);
-      free (dat.chain);
+      FREE (out_dat.chain);
+      FREE (dat.chain);
       dwg_free (&dwg);
 
       if (opt.verify)
@@ -402,14 +403,14 @@ main (int argc, char *argv[])
             }
           fclose (dat.fh);
           dwg_free (&dwg);
-          free (dat.chain);
+          FREE (dat.chain);
         }
     }
   else
     {
       fclose (fp);
       dwg_free (&dwg);
-      free (dat.chain);
+      FREE (dat.chain);
       LOG_ERROR ("dwgadd failed to add objects")
     }
 
@@ -430,7 +431,7 @@ scan_pts2d (unsigned num_pts, char **pp)
     p++;
   if (num_pts > 5000)
     exit (0);
-  pts = (dwg_point_2d *)calloc (num_pts, 16);
+  pts = (dwg_point_2d *)CALLOC (num_pts, 16);
   if (!pts)
     exit (0);
   for (unsigned i = 0; i < num_pts; i++)
@@ -463,7 +464,7 @@ scan_pts2d (unsigned num_pts, char **pp)
     }
   else
     {
-      free (pts);
+      FREE (pts);
       return NULL;
     }
 }
@@ -482,7 +483,7 @@ scan_pts3d (unsigned num_pts, char **pp)
     p++;
   if (num_pts > 5000)
     exit (0);
-  pts = (dwg_point_3d *)calloc (num_pts, 24);
+  pts = (dwg_point_3d *)CALLOC (num_pts, 24);
   if (!pts)
     exit (0);
   for (unsigned i = 0; i < num_pts; i++)
@@ -515,7 +516,7 @@ scan_pts3d (unsigned num_pts, char **pp)
     }
   else
     {
-      free (pts);
+      FREE (pts);
       return NULL;
     }
 }
@@ -534,7 +535,7 @@ scan_faces (unsigned num, char **pp)
     p++;
   if (num > 5000)
     exit (0);
-  faces = (dwg_face *)calloc (num, 4 * sizeof (int));
+  faces = (dwg_face *)CALLOC (num, 4 * sizeof (int));
   if (!faces)
     exit (0);
   for (unsigned i = 0; i < num; i++)
@@ -577,7 +578,7 @@ scan_faces (unsigned num, char **pp)
     }
   else
     {
-      free (faces);
+      FREE (faces);
       return NULL;
     }
 }
@@ -1450,7 +1451,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             ent = (lastent_t){ .u.polyline_2d
                                = dwg_add_POLYLINE_2D (hdr, i1, pts),
                                .type = DWG_TYPE_POLYLINE_2D };
-            free (pts);
+            FREE (pts);
           }
       }
       else
@@ -1474,7 +1475,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             ent = (lastent_t){ .u.polyline_3d
                                = dwg_add_POLYLINE_3D (hdr, i1, pts),
                                .type = DWG_TYPE_POLYLINE_3D };
-            free (pts);
+            FREE (pts);
           }
       }
       else
@@ -1498,7 +1499,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             ent = (lastent_t){ .u.polyline_mesh
                                = dwg_add_POLYLINE_MESH (hdr, i1, i2, pts),
                                .type = DWG_TYPE_POLYLINE_MESH };
-            free (pts);
+            FREE (pts);
           }
       }
       else
@@ -1547,8 +1548,8 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             ent = (lastent_t){ .u.polyline_pface
                                = dwg_add_POLYLINE_PFACE (hdr, i1, i2, verts, faces),
                                .type = DWG_TYPE_POLYLINE_PFACE };
-            free (verts);
-            free (faces);
+            FREE (verts);
+            FREE (faces);
           }
       }
       else
@@ -1571,7 +1572,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             ent = (lastent_t){ .u.lwpolyline
                                = dwg_add_LWPOLYLINE (hdr, i1, pts),
                                .type = DWG_TYPE_LWPOLYLINE };
-            free (pts);
+            FREE (pts);
           }
       }
       else
@@ -1594,7 +1595,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
             CHK_MISSING_BLOCK_HEADER
             ent = (lastent_t){ .u.mline = dwg_add_MLINE (hdr, i1, pts),
                                .type = DWG_TYPE_MLINE };
-            free (pts);
+            FREE (pts);
           }
       }
       else
@@ -1692,7 +1693,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
                                = dwg_add_SPLINE (hdr, i1, fitpts, &pt2, &pt3),
                                .type = DWG_TYPE_SPLINE };
           }
-        free (fitpts);
+        FREE (fitpts);
       }
       else
         // clang-format off
@@ -1722,7 +1723,7 @@ dwg_add_dat (Dwg_Data **dwgp, Bit_Chain *dat)
                                                            mtext.u.mtext, i2),
                                .type = DWG_TYPE_LEADER };
           }
-        free (pts);
+        FREE (pts);
       }
       else
         // clang-format off

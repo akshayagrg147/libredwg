@@ -41,6 +41,7 @@ static unsigned int loglevel;
 #include "logging.h"
 
 #include "in_dxf.h"
+#include "free.h"
 
 // not exported
 #define JSMN_STATIC
@@ -114,7 +115,7 @@ static Bit_Chain *g_dat;
         size_t slen = strlen (s);                                             \
         memcpy (&_obj->nam, s, MIN (len, slen));                              \
         LOG_TRACE (#nam ": \"%.*s\"\n", len, _obj->nam);                      \
-        free (s);                                                             \
+        FREE (s);                                                             \
       }                                                                       \
     else                                                                      \
       {                                                                       \
@@ -131,7 +132,7 @@ static Bit_Chain *g_dat;
         slen = MIN (len, slen);                                               \
         memcpy (&_obj->nam, s, slen);                                         \
         LOG_TRACE (#nam ": \"%.*s\"\n", (int)slen, _obj->nam);                \
-        free (s);                                                             \
+        FREE (s);                                                             \
       }                                                                       \
   }
 #define FIELD_BINARY(nam, lenf, dxf)                                          \
@@ -251,7 +252,7 @@ static Bit_Chain *g_dat;
 #define FIELD_VECTOR(nam, typ, _sizef, dxf)                                   \
   else if (strEQc (key, #nam) && t->type == JSMN_ARRAY)                       \
   {                                                                           \
-    _obj->nam = (BITCODE_##typ *)calloc (t->size, sizeof (BITCODE_##typ));    \
+    _obj->nam = (BITCODE_##typ *)CALLOC (t->size, sizeof (BITCODE_##typ));    \
     _obj->_sizef = t->size;                                                   \
     tokens->index++;                                                          \
     JSON_TOKENS_CHECK_OVERFLOW_ERR                                            \
@@ -381,7 +382,7 @@ json_string (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens)
   if (memchr (&dat->chain[t->start], '\\', len))
     {
       len += 8;
-      key = (char *)calloc (1, len);
+      key = (char *)CALLOC (1, len);
       if (!key)
         goto outofmemory;
       dat->chain[t->end] = '\0';
@@ -396,10 +397,10 @@ json_string (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens)
                          t->end - t->start, t->end - t->start,
                          &dat->chain[t->start]);
               len = t->end - t->start;
-              free (key);
+              FREE (key);
               goto normal;
             }
-          key = (char *)realloc (key, len);
+          key = (char *)REALLOC (key, len);
           if (!key)
             goto outofmemory;
         }
@@ -407,7 +408,7 @@ json_string (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens)
   else
     {
     normal:
-      key = (char *)malloc (len + 1);
+      key = (char *)MALLOC (len + 1);
       if (!key)
         goto outofmemory;
       memcpy (key, &dat->chain[t->start], len);
@@ -444,7 +445,7 @@ json_fixed_string (Bit_Chain *restrict dat, const int len,
                    jsmntokens_t *restrict tokens)
 {
   const jsmntok_t *t = &tokens->tokens[tokens->index];
-  char *str = (char *)calloc (len + 1, 1);
+  char *str = (char *)CALLOC (len + 1, 1);
   int l;
   JSON_TOKENS_CHECK_OVERFLOW_NULL;
   l = t->end - t->start;
@@ -473,10 +474,10 @@ json_fixed_string (Bit_Chain *restrict dat, const int len,
               LOG_ERROR ("bit_utf8_to_TV loop len=%d vs %d \"%.*s\"", len, l,
                          l, &dat->chain[t->start]);
               // len = t->end - t->start;
-              free (str);
+              FREE (str);
               goto normal;
             }
-          str = (char *)realloc (str, dlen);
+          str = (char *)REALLOC (str, dlen);
           if (!str)
             goto outofmemory;
         }
@@ -512,7 +513,7 @@ json_binary (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens,
   const char *str = (char *)&dat->chain[t->start];
   const size_t blen = len / 2;
   size_t read;
-  unsigned char *buf = len ? (unsigned char *)malloc (blen + 1) : NULL;
+  unsigned char *buf = len ? (unsigned char *)MALLOC (blen + 1) : NULL;
   char *pos = (char *)str;
   char *old;
 
@@ -521,7 +522,7 @@ json_binary (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens,
     {
       LOG_ERROR ("Expected JSON STRING");
       json_advance_unknown (dat, tokens, t->type, 0);
-      free (buf);
+      FREE (buf);
       JSON_TOKENS_CHECK_OVERFLOW_NULL
       return NULL;
     }
@@ -934,27 +935,27 @@ json_vector (Bit_Chain *restrict dat, jsmntokens_t *restrict tokens,
   if (strEQc (type, "BL"))
     {
       size = sizeof (BITCODE_BL);
-      a_bl = len ? (BITCODE_BL *)calloc (len, size) : NULL;
+      a_bl = len ? (BITCODE_BL *)CALLOC (len, size) : NULL;
       arr = a_bl;
     }
   else if (strEQc (type, "RLL"))
     {
       size = sizeof (BITCODE_RLL);
-      a_rll = len ? (BITCODE_RLL *)calloc (len, size) : NULL;
+      a_rll = len ? (BITCODE_RLL *)CALLOC (len, size) : NULL;
       arr = a_rll;
     }
   else if (strEQc (type, "BD"))
     {
       is_float = 1;
       size = sizeof (BITCODE_BD);
-      a_bd = len ? (BITCODE_BD *)calloc (len, size) : NULL;
+      a_bd = len ? (BITCODE_BD *)CALLOC (len, size) : NULL;
       arr = a_bd;
     }
   else if (strEQc (type, "TV"))
     {
       is_str = 1;
       size = sizeof (BITCODE_TV);
-      a_tv = len ? (BITCODE_TV *)calloc (len, size) : NULL;
+      a_tv = len ? (BITCODE_TV *)CALLOC (len, size) : NULL;
       arr = a_tv;
     }
   else
@@ -1223,12 +1224,12 @@ json_HEADER (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
             { // split into MENU + MENUEXT
               strncpy ((char *)dwg->header_vars.MENUEXT, &str[15], 45);
               str[15] = '\0';
-              dwg->header_vars.MENU = strdup (str);
+              dwg->header_vars.MENU = STRDUP (str);
               dwg->header_vars.MENUEXT[45] = '\0';
             }
           else
             dwg_dynapi_header_set_value (dwg, key, &str, 1);
-          free (str);
+          FREE (str);
         }
       else if (t->type == JSMN_ARRAY
                && (strEQc (f->type, "3BD") || strEQc (f->type, "3RD")
@@ -1309,9 +1310,9 @@ json_CLASSES (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
              tokens->index, size);
   tokens->index++;
   if (dwg->num_classes == 0)
-    dwg->dwg_class = (Dwg_Class *)calloc (size, sizeof (Dwg_Class));
+    dwg->dwg_class = (Dwg_Class *)CALLOC (size, sizeof (Dwg_Class));
   else
-    dwg->dwg_class = (Dwg_Class *)realloc (
+    dwg->dwg_class = (Dwg_Class *)REALLOC (
         dwg->dwg_class, (dwg->num_classes + size) * sizeof (Dwg_Class));
   if (!dwg->dwg_class)
     {
@@ -1452,7 +1453,7 @@ eed_need_size (Bit_Chain *restrict dat, Dwg_Eed *restrict eed,
       size = eed[isize].size;
       LOG_TRACE (" extend eed[%u].size %u +%d (have: %d, need: %d)\n", isize,
                  size, diff, *havep, need)
-      eed[i].data = (Dwg_Eed_Data *)realloc (eed[i].data, size + diff);
+      eed[i].data = (Dwg_Eed_Data *)REALLOC (eed[i].data, size + diff);
       eed[isize].size += diff;
       *havep = size + diff - need;
       return true;
@@ -1469,7 +1470,7 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
   const char *name = "";
   int isize = -1;
   long size = 0;
-  obj->eed = (Dwg_Eed *)calloc (t->size, sizeof (Dwg_Eed));
+  obj->eed = (Dwg_Eed *)CALLOC (t->size, sizeof (Dwg_Eed));
   obj->num_eed = t->size;
   LOG_TRACE ("num_eed: " FORMAT_BL " [BL]\n", obj->num_eed);
   tokens->index++; // array of objects
@@ -1497,7 +1498,7 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                   // to recalc
                   obj->eed[i].size = (BITCODE_BS)size;
                   have = size + 1; // we overallocate by 1 for the ending NUL
-                  obj->eed[i].data = (Dwg_Eed_Data *)calloc (have, 1);
+                  obj->eed[i].data = (Dwg_Eed_Data *)CALLOC (have, 1);
                   LOG_INSANE (" alloc eed[%u].data: %d\n", i, have)
                 }
               else if (strEQc (key, "handle"))
@@ -1521,13 +1522,13 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                     {
                       if (have > 0)
                         {
-                          obj->eed[i - 1].data = (Dwg_Eed_Data *)realloc (
+                          obj->eed[i - 1].data = (Dwg_Eed_Data *)REALLOC (
                               obj->eed[i - 1].data, size - have);
-                          LOG_INSANE (" realloc eed[%u].data: %d\n", i - 1,
+                          LOG_INSANE (" REALLOC eed[%u].data: %d\n", i - 1,
                                       (int)(size - have))
                         }
                       have = size - have - 1;
-                      obj->eed[i].data = (Dwg_Eed_Data *)calloc (have, 1);
+                      obj->eed[i].data = (Dwg_Eed_Data *)CALLOC (have, 1);
                       LOG_INSANE (" alloc eed[%u].data: %d\n", i, have)
                     }
                   have--;
@@ -1561,7 +1562,7 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                                     (len + 1) & 0xFFFF);
                           LOG_TRACE ("eed[%u].data.value \"%s\"\n", i, s);
                           have++; // ignore the ending NUL
-                          free (s);
+                          FREE (s);
                           // with PRE (R_2007), the size gets smaller
                           if (does_cross_unicode_datversion (dat))
                             {
@@ -1583,7 +1584,7 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                       2); have += 2; // ignore the ending NUL LOG_TRACE
                       ("eed[%u].data.value \"%.*s\"\n", i, t->end - t->start,
                                      &dat->chain[t->start]);
-                          free (s);
+                          FREE (s);
                         }
                         */
                       }
@@ -1621,7 +1622,7 @@ json_eed (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                         memcpy (&data->u.eed_4.data, s, len & 0xFF);
                         data->u.eed_4.length = len & 0xFF;
                         // LOG_TRACE ("eed[%u].data.value \"%s\"\n", i, s);
-                        free (s);
+                        FREE (s);
                         break;
                       }
                     case 5:
@@ -1689,7 +1690,7 @@ json_xdata (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
   Dwg_Resbuf *rbuf;
   BITCODE_BL size = 0;
   const char *name = "XRECORD";
-  obj->xdata = (Dwg_Resbuf *)calloc (1, sizeof (Dwg_Resbuf));
+  obj->xdata = (Dwg_Resbuf *)CALLOC (1, sizeof (Dwg_Resbuf));
   rbuf = obj->xdata;
   obj->num_xdata = t->size;
   LOG_INSANE ("num_xdata: " FORMAT_BL "\n", obj->num_xdata);
@@ -1738,7 +1739,7 @@ json_xdata (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                 {
                   rbuf->value.str.is_tu = 1;
                   rbuf->value.str.u.wdata = bit_utf8_to_TU (s, 0);
-                  free (s);
+                  FREE (s);
                   LOG_TRACE_TU ("xdata", rbuf->value.str.u.wdata, rbuf->type);
                   size += ((len * 2) & 0xFFFF) + 2;
                 }
@@ -1822,7 +1823,7 @@ json_xdata (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
             default:
               break;
             }
-          rbuf = (Dwg_Resbuf *)calloc (1, sizeof (Dwg_Resbuf));
+          rbuf = (Dwg_Resbuf *)CALLOC (1, sizeof (Dwg_Resbuf));
           old->nextrb = rbuf;
         }
       else
@@ -1852,7 +1853,7 @@ json_acis_data (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
   int len = 0;
   int alloc = t->end - t->start;
   int size = t->size;
-  char *s = (char *)calloc (alloc, 1);
+  char *s = (char *)CALLOC (alloc, 1);
   Dwg_Entity__3DSOLID *_obj = obj->tio.entity->tio._3DSOLID;
   BITCODE_BS acis_version;
 
@@ -1877,7 +1878,7 @@ json_acis_data (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                   LOG_WARN ("Internal surprise, acis_data overshoot %d > %d",
                             len, alloc);
                   alloc += 60;
-                  s = (char *)realloc (s, alloc);
+                  s = (char *)REALLOC (s, alloc);
                 }
               strncat (s, (char *)&dat->chain[t->start], l);
               strcat (s, "\n");
@@ -1888,7 +1889,7 @@ json_acis_data (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
               if (len > alloc)
                 {
                   alloc = len;
-                  s = (char *)realloc (s, alloc);
+                  s = (char *)REALLOC (s, alloc);
                 }
               if (i == 0) // first line is plain, second is binary
                 strncat (s, (char *)&dat->chain[t->start], l);
@@ -1917,7 +1918,7 @@ json_acis_data (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
     {
       BITCODE_BL num_blocks = 1;
       BITCODE_BL sab_size = len;
-      BITCODE_BL *block_size = (BITCODE_BL *)calloc (2, sizeof (BITCODE_BL));
+      BITCODE_BL *block_size = (BITCODE_BL *)CALLOC (2, sizeof (BITCODE_BL));
       block_size[0] = len;
       block_size[1] = 0;
       LOG_TRACE (" num_blocks: " FORMAT_BL " [BL]\n", num_blocks);
@@ -1942,7 +1943,7 @@ find_sizefield (const Dwg_DYNAPI_field *restrict fields,
                 const char *restrict key)
 {
   const Dwg_DYNAPI_field *f;
-  char *s = (char *)malloc (strlen (key) + 12);
+  char *s = (char *)MALLOC (strlen (key) + 12);
   strcpy (s, key);
   strcat (s, "_size");
   for (f = &fields[0]; f->name; f++)
@@ -1950,11 +1951,11 @@ find_sizefield (const Dwg_DYNAPI_field *restrict fields,
       if (strEQ (s, f->name))
         {
           long size = 0;
-          free (s);
+          FREE (s);
           return f;
         }
     }
-  free (s);
+  FREE (s);
   return NULL;
 }
 
@@ -2152,7 +2153,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
               size_t blen = len / 2;
               size_t read;
               unsigned char *buf
-                  = len ? (unsigned char *)malloc (blen + 1) : NULL;
+                  = len ? (unsigned char *)MALLOC (blen + 1) : NULL;
               char *pos = str;
               char *old;
               if (buf)
@@ -2164,7 +2165,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                   LOG_TRACE ("%s.%s: '%.*s'... [BINARY %zu]\n", name, key,
                              MIN ((int)len, 60), str, len);
                 }
-              free (str);
+              FREE (str);
               json_set_sizefield (_obj, fields, key, blen);
               // set the ptr directly, no alloc, no conversion.
               old = &((char *)_obj)[f->offset];
@@ -2222,13 +2223,13 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                     }
                   else if (len != k)
                     {
-                      str = (char *)realloc (str, k);
+                      str = (char *)REALLOC (str, k);
                       memset (&str[len + 1], 0, k - len - 1);
                     }
                 }
               else if (f->size > sizeof (char *))
                 {
-                  str = (char *)realloc (str, f->size);
+                  str = (char *)REALLOC (str, f->size);
                   memset (&str[len + 1], 0, f->size - len - 1);
                 }
               LOG_TRACE ("%s.%s: \"%s\" [%s %d]\n", name, key, str, f->type,
@@ -2244,7 +2245,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
               LOG_TRACE ("%s.%s: \"%s\" [%s] len=%d\n", name, key, str,
                          f->type, (int)len);
               dwg_dynapi_field_set_value (dwg, _obj, f, &str, 1);
-              free (str);
+              FREE (str);
             }
         }
       else if (t->type == JSMN_ARRAY
@@ -2299,7 +2300,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
               return DWG_ERR_INVALIDDWG;
             }
           hdls
-              = size1 ? (BITCODE_H *)calloc (size1, sizeof (BITCODE_H)) : NULL;
+              = size1 ? (BITCODE_H *)CALLOC (size1, sizeof (BITCODE_H)) : NULL;
           json_set_numfield (_obj, fields, key, (long)size1);
           tokens->index++;
           for (int k = 0; k < t->size; k++)
@@ -2334,7 +2335,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
               return DWG_ERR_INVALIDDWG;
             }
           elems
-              = size1 ? (BITCODE_T *)calloc (size1, sizeof (BITCODE_T)) : NULL;
+              = size1 ? (BITCODE_T *)CALLOC (size1, sizeof (BITCODE_T)) : NULL;
           json_set_numfield (_obj, fields, key, (long)size1);
           tokens->index++;
           for (int k = 0; k < t->size; k++)
@@ -2363,7 +2364,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
         {
           int size1 = t->size;
           BITCODE_3DPOINT *pts
-              = size1 ? (BITCODE_3BD *)calloc (size1, sizeof (BITCODE_3BD))
+              = size1 ? (BITCODE_3BD *)CALLOC (size1, sizeof (BITCODE_3BD))
                       : NULL;
           json_set_numfield (_obj, fields, key, size1);
           tokens->index++;
@@ -2379,7 +2380,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
       else if (t->type == JSMN_ARRAY && strEQc (f->type, "2RD*"))
         {
           int size1 = t->size;
-          BITCODE_2DPOINT *pts = size1 ? (BITCODE_2DPOINT *)calloc (
+          BITCODE_2DPOINT *pts = size1 ? (BITCODE_2DPOINT *)CALLOC (
                                      size1, sizeof (BITCODE_2DPOINT))
                                        : NULL;
           json_set_numfield (_obj, fields, key, size1);
@@ -2397,7 +2398,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
         {
           int size1 = t->size;
           BITCODE_BD *nums
-              = size1 ? (BITCODE_BD *)calloc (size1, sizeof (BITCODE_BD))
+              = size1 ? (BITCODE_BD *)CALLOC (size1, sizeof (BITCODE_BD))
                       : NULL;
           json_set_numfield (_obj, fields, key, size1);
           tokens->index++;
@@ -2416,7 +2417,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
         {
           int size1 = t->size;
           BITCODE_BL *nums
-              = size1 ? (BITCODE_BL *)calloc (size1, sizeof (BITCODE_BL))
+              = size1 ? (BITCODE_BL *)CALLOC (size1, sizeof (BITCODE_BL))
                       : NULL;
           json_set_numfield (_obj, fields, key, size1);
           tokens->index++;
@@ -2448,8 +2449,8 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
         {
           BITCODE_BL num_blocks = t->size;
           BITCODE_BL *block_size
-              = (BITCODE_BL *)calloc (num_blocks + 1, sizeof (BITCODE_BL));
-          unsigned char **data = (unsigned char **)calloc (
+              = (BITCODE_BL *)CALLOC (num_blocks + 1, sizeof (BITCODE_BL));
+          unsigned char **data = (unsigned char **)CALLOC (
               num_blocks + 1, sizeof (unsigned char *));
           tokens->index++;
           LOG_TRACE ("num_blocks: " FORMAT_BL " [BL]\n", num_blocks);
@@ -2489,7 +2490,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
           if (!size_elem || !sfields)
             {
               LOG_ERROR ("Unknown subclass name %s", subclass);
-              free (subclass);
+              FREE (subclass);
               goto unknown_ent;
             }
           LOG_TRACE ("new subclass %s %s [%d elems with size %d]\n", name,
@@ -2503,11 +2504,11 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
             }
           if (strEQc (subclass, "DIMASSOC_Ref") && num_elems != 4)
             {
-              elems = (char *)calloc (MAX (4, num_elems), size_elem);
+              elems = (char *)CALLOC (MAX (4, num_elems), size_elem);
               LOG_TRACE ("DIMASSOC num_refs = 4\n");
             }
           else
-            elems = num_elems ? (char *)calloc (num_elems, size_elem) : NULL;
+            elems = num_elems ? (char *)CALLOC (num_elems, size_elem) : NULL;
           dwg_dynapi_field_set_value (dwg, _obj, f, &elems, 1);
           tokens->index++;
           // array of structs
@@ -2525,7 +2526,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                              t_typename[t->type], tokens->index,
                              tokens->num_tokens, subclass, __FUNCTION__,
                              __LINE__);
-                  free (subclass);
+                  FREE (subclass);
                   json_advance_unknown (dat, tokens, t->type, 0);
                   JSON_TOKENS_CHECK_OVERFLOW_ERR
                   return DWG_ERR_INVALIDTYPE;
@@ -2567,7 +2568,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                                   &elems[(k * size_elem) + f1->offset], sb1,
                                   rest, sfields1))
                             ++tokens->index;
-                          free (sb1);
+                          FREE (sb1);
                         }
                     }
                   if (!f1 || !f1->name) // not found
@@ -2580,7 +2581,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
             }
           if (dwg_dynapi_field_set_value (dwg, _obj, f, &elems, 1))
             LOG_TRACE ("subclass %s.%s done\n", name, key);
-          free (subclass);
+          FREE (subclass);
         }
       // subclass structs (embedded):
       else if (t->type == JSMN_OBJECT && memBEGINc (f->type, "Dwg_"))
@@ -2599,7 +2600,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
           if (!sfields)
             {
               LOG_ERROR ("Unknown subclass name %s", subclass);
-              free (subclass);
+              FREE (subclass);
               goto unknown_ent;
             }
           LOG_TRACE ("embedded struct %s %s [%d keys]\n", subclass, key,
@@ -2641,7 +2642,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                           || !_set_struct_field (dat, obj, tokens, off,
                                                  subclass1, rest, sfields1))
                         ++tokens->index;
-                      free (subclass1);
+                      FREE (subclass1);
                     }
                 }
               if (!f1 || !f1->name) // not found
@@ -2650,7 +2651,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                   ++tokens->index;
                 }
             }
-          free (subclass);
+          FREE (subclass);
         }
       else
         {
@@ -2688,7 +2689,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                   || !_set_struct_field (dat, obj, tokens, off, subclass1,
                                          rest, sfields1))
                 ++tokens->index;
-              free ((char *)subclass1);
+              FREE ((char *)subclass1);
               return error | (f1->name ? 1 : 0); // found or not
             }
           f1 = dwg_dynapi_subclass_field (name, key);
@@ -2704,7 +2705,7 @@ _set_struct_field (Bit_Chain *restrict dat, const Dwg_Object *restrict obj,
                   || !_set_struct_field (dat, obj, tokens, off, subclass1,
                                          rest, sfields1))
                 ++tokens->index;
-              free ((char *)subclass1);
+              FREE ((char *)subclass1);
               return error | (f1->name ? 1 : 0); // found or not
             }
           else
@@ -2879,8 +2880,8 @@ in_postprocess_DICTIONARY (Dwg_Object *obj)
   if ((_obj->numitems || do_free) && !_obj->texts)
     {
       LOG_ERROR ("reset DICTIONARY, no texts");
-      // need to leave the handles, just free H*
-      free (_obj->itemhandles);
+      // need to leave the handles, just FREE H*
+      FREE (_obj->itemhandles);
       _obj->itemhandles = NULL;
       _obj->numitems = 0;
     }
@@ -2888,8 +2889,8 @@ in_postprocess_DICTIONARY (Dwg_Object *obj)
     {
       LOG_ERROR ("reset DICTIONARY, no itemhandles");
       for (BITCODE_BL i = 0; i < _obj->numitems; i++)
-        free (_obj->texts[i]);
-      free (_obj->texts);
+        FREE (_obj->texts[i]);
+      FREE (_obj->texts);
       _obj->texts = NULL;
       _obj->numitems = 0;
     }
@@ -2909,8 +2910,8 @@ in_postprocess_DICTIONARYWDFLT (Dwg_Object *obj)
   if ((_obj->numitems || do_free) && !_obj->texts)
     {
       LOG_ERROR ("reset DICTIONARYWDFLT, no texts");
-      // need to leave the handles, just free H*
-      free (_obj->itemhandles);
+      // need to leave the handles, just FREE H*
+      FREE (_obj->itemhandles);
       _obj->itemhandles = NULL;
       _obj->numitems = 0;
     }
@@ -2918,8 +2919,8 @@ in_postprocess_DICTIONARYWDFLT (Dwg_Object *obj)
     {
       LOG_ERROR ("reset DICTIONARYWDFLT, no itemhandles");
       for (BITCODE_BL i = 0; i < _obj->numitems; i++)
-        free (_obj->texts[i]);
-      free (_obj->texts);
+        FREE (_obj->texts[i]);
+      FREE (_obj->texts);
       _obj->texts = NULL;
       _obj->numitems = 0;
     }
@@ -2953,7 +2954,7 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
       int rounded = size;
       if (rounded % REFS_PER_REALLOC)
         rounded += REFS_PER_REALLOC - (rounded % REFS_PER_REALLOC);
-      dwg->object = (Dwg_Object *)calloc (rounded, sizeof (Dwg_Object));
+      dwg->object = (Dwg_Object *)CALLOC (rounded, sizeof (Dwg_Object));
     }
   else
     dwg_add_object (dwg);
@@ -2965,7 +2966,7 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
   if (dwg->header.from_version < R_13b1)
     {
       dwg->header.section
-          = (Dwg_Section *)calloc (SECTION_VX + 1, sizeof (Dwg_Section));
+          = (Dwg_Section *)CALLOC (SECTION_VX + 1, sizeof (Dwg_Section));
     }
   dwg->num_objects += size;
   for (i = 0; i < size; i++)
@@ -3110,20 +3111,20 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
               */
               LOG_TRACE ("\nnew object %s [%d] (size: %d)\n", name, i,
                          objsize);
-              obj->tio.object = (Dwg_Object_Object *)calloc (
+              obj->tio.object = (Dwg_Object_Object *)CALLOC (
                   1, sizeof (Dwg_Object_Object));
               obj->tio.object->dwg = dwg;
               obj->tio.object->objid = i;
               // NEW_OBJECT (dwg, obj)
               // ADD_OBJECT loop?
-              _obj = (Dwg_Object_APPID *)calloc (1, objsize);
+              _obj = (Dwg_Object_APPID *)CALLOC (1, objsize);
               obj->tio.object->tio.APPID = _obj;
               obj->tio.object->tio.APPID->parent = obj->tio.object;
-              free (obj->name);
-              obj->name = strdup (name);
+              FREE (obj->name);
+              obj->name = STRDUP (name);
               // TODO alias
-              free (obj->dxfname);
-              obj->dxfname = strdup (name);
+              FREE (obj->dxfname);
+              obj->dxfname = STRDUP (name);
               tokens->index++;
               JSON_TOKENS_CHECK_OVERFLOW (goto harderr)
             }
@@ -3172,20 +3173,20 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                 }
               LOG_TRACE ("\nnew entity %s [%d] (size: %d)\n", name, i,
                          objsize);
-              obj->tio.entity = (Dwg_Object_Entity *)calloc (
+              obj->tio.entity = (Dwg_Object_Entity *)CALLOC (
                   1, sizeof (Dwg_Object_Entity));
               obj->tio.entity->dwg = dwg;
               obj->tio.entity->objid = i;
               // NEW_ENTITY (dwg, obj)
               // ADD_ENTITY loop?
-              _obj = (Dwg_Object_APPID *)calloc (1, objsize);
+              _obj = (Dwg_Object_APPID *)CALLOC (1, objsize);
               obj->tio.entity->tio.POINT = (Dwg_Entity_POINT *)_obj;
               obj->tio.entity->tio.POINT->parent = obj->tio.entity;
-              free (obj->name);
-              obj->name = strdup (name);
+              FREE (obj->name);
+              obj->name = STRDUP (name);
               // if different, the alias is done via extra dxfname key (below)
-              free (obj->dxfname);
-              obj->dxfname = strdup (name);
+              FREE (obj->dxfname);
+              obj->dxfname = STRDUP (name);
               tokens->index++;
               JSON_TOKENS_CHECK_OVERFLOW (goto harderr)
             }
@@ -3197,12 +3198,12 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
             }
           else if (strEQc (key, "dxfname"))
             {
-              free (obj->dxfname);
+              FREE (obj->dxfname);
               saw_dxfname = true;
               obj->dxfname = json_string (dat, tokens);
               LOG_TRACE ("dxfname: %s\n", obj->dxfname)
               if (!obj->dxfname)
-                obj->dxfname = strdup (name);
+                obj->dxfname = STRDUP (name);
 
               // Some objects have various subtypes under one name.
               // TODO OBJECTCONTEXTDATA, ...
@@ -3255,8 +3256,8 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                         LOG_WARN ("Changed wrong dxfname %s => %s",
                                   obj->dxfname, dxfname)
                     }
-                  free (obj->dxfname);
-                  obj->dxfname = strdup (dxfname);
+                  FREE (obj->dxfname);
+                  obj->dxfname = STRDUP (dxfname);
                   if (obj->type <= DWG_TYPE_LAYOUT
                       && obj->fixedtype != obj->type
                       && dwg->header.from_version >= R_13b1)
@@ -3394,16 +3395,16 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
               char *hex = json_string (dat, tokens);
               const unsigned blen = len / 2;
               unsigned read;
-              BITCODE_TF buf = (BITCODE_TF)malloc (blen + 1);
+              BITCODE_TF buf = (BITCODE_TF)MALLOC (blen + 1);
               if ((read = in_hex2bin (buf, hex, blen) != blen))
                 LOG_ERROR ("in_hex2bin with key %s at pos %u of %u", key, read,
                            blen);
               buf[blen] = '\0';
-              free (hex);
+              FREE (hex);
               if (!obj->num_unknown_bits)
                 obj->num_unknown_bits = blen * 8; // minus some padding bits
               if (obj->unknown_bits)
-                free (obj->unknown_bits);
+                FREE (obj->unknown_bits);
               obj->unknown_bits = buf;
               // LOG_TRACE ("%s: '%.*s' [%s] (binary)\n", key, blen, buf,
               //            f->type);
@@ -3422,14 +3423,14 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
               if (t->type == JSMN_STRING && is_entity && strEQc (key, "tag"))
                 {
                   int sz = t->end - t->start;
-                  char *tag = (char *)malloc (sz + 1);
+                  char *tag = (char *)MALLOC (sz + 1);
                   memcpy (tag, &dat->chain[t->start], sz);
                   tag[sz] = '\0';
                   if (sz <= 0 || !dwg_is_valid_tag (tag))
                     {
                       LOG_WARN ("Invalid %s.tag: %s\n", obj->name, tag);
                     }
-                  free (tag);
+                  FREE (tag);
                 }
               if (_set_struct_field (dat, obj, tokens, _obj, name, key,
                                      fields))
@@ -3489,10 +3490,10 @@ json_OBJECTS (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
                 {
                   Dwg_Object_DICTIONARY *o = obj->tio.object->tio.DICTIONARY;
                   o->numitems = t->size;
-                  o->texts = o->numitems ? (BITCODE_T *)calloc (
+                  o->texts = o->numitems ? (BITCODE_T *)CALLOC (
                                  o->numitems, sizeof (BITCODE_T))
                                          : NULL;
-                  o->itemhandles = o->numitems ? (BITCODE_H *)calloc (
+                  o->itemhandles = o->numitems ? (BITCODE_H *)CALLOC (
                                        o->numitems, sizeof (BITCODE_H))
                                                : NULL;
                   tokens->index++;
@@ -3555,7 +3556,7 @@ json_HANDLES (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
   LOG_TRACE ("\n%s pos:%d [%d members]\n--------------------\n", section,
              tokens->index, size);
   // Maybe create dwg->header.section[SECTION_HANDLES_R13] omap here.
-  // struct { uint32_t hdloff; int32_t offset } *omap = calloc (size, 8);
+  // struct { uint32_t hdloff; int32_t offset } *omap = CALLOC (size, 8);
   for (int i = 0; i < size; i++)
     {
       tokens->index++;
@@ -3743,7 +3744,7 @@ json_R2004_Header (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
               memcpy (&_obj->file_ID_string, "AcFssFcAJMB\0", 12);
             }
           LOG_TRACE ("file_ID_string: \"%.*s\"\n", 12, _obj->file_ID_string)
-          free (s);
+          FREE (s);
         }
       else if (strEQc (key, "padding"))
         {
@@ -4134,7 +4135,7 @@ json_SummaryInfo (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
           size1 = t->size;
           LOG_TRACE ("\n%s pos:%d [%d members]\n--------------------\n",
                      "SummaryInfo_Property", tokens->index, size);
-          _obj->props = (Dwg_SummaryInfo_Property *)calloc (
+          _obj->props = (Dwg_SummaryInfo_Property *)CALLOC (
               size1, sizeof (Dwg_SummaryInfo_Property));
           _obj->num_props = size1;
           tokens->index++;
@@ -4332,7 +4333,7 @@ json_FileDepList_Files (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
       return DWG_ERR_INVALIDTYPE;
     }
   o->files
-      = (Dwg_FileDepList_Files *)calloc (size, sizeof (Dwg_FileDepList_Files));
+      = (Dwg_FileDepList_Files *)CALLOC (size, sizeof (Dwg_FileDepList_Files));
   o->num_files = size;
   for (int j = 0; j < size; j++)
     {
@@ -4419,7 +4420,7 @@ json_FileDepList (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
             {
               int size1 = t->size;
               _obj->features
-                  = (BITCODE_TV *)calloc (size1, sizeof (BITCODE_TV));
+                  = (BITCODE_TV *)CALLOC (size1, sizeof (BITCODE_TV));
               _obj->num_features = size1;
               tokens->index++;
               for (int j = 0; j < size1; j++)
@@ -4625,7 +4626,7 @@ json_AcDs_SegmentIndex (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
       return DWG_ERR_INVALIDTYPE;
     }
   o->segidx
-      = (Dwg_AcDs_SegmentIndex *)calloc (size, sizeof (Dwg_AcDs_SegmentIndex));
+      = (Dwg_AcDs_SegmentIndex *)CALLOC (size, sizeof (Dwg_AcDs_SegmentIndex));
   o->num_segidx = size;
   for (int j = 0; j < size; j++)
     {
@@ -4684,7 +4685,7 @@ json_AcDs_Segments (Bit_Chain *restrict dat, Dwg_Data *restrict dwg,
       json_advance_unknown (dat, tokens, t->type, 0);
       return DWG_ERR_INVALIDTYPE;
     }
-  o->segments = (Dwg_AcDs_Segment *)calloc (size, sizeof (Dwg_AcDs_Segment));
+  o->segments = (Dwg_AcDs_Segment *)CALLOC (size, sizeof (Dwg_AcDs_Segment));
   // o->num_segidx = size;
   for (int j = 0; j < size; j++)
     {
@@ -4933,8 +4934,8 @@ static void
 json_free_globals (jsmntokens_t *tokens)
 {
   if (tokens)
-    free (tokens->tokens);
-  free (created_by);
+    FREE (tokens->tokens);
+  FREE (created_by);
 }
 
 EXPORT int
@@ -4984,7 +4985,7 @@ dwg_read_json (Bit_Chain *restrict dat, Dwg_Data *restrict dwg)
     }
   LOG_TRACE ("  num_tokens: %ld\n", tokens.num_tokens);
   tokens.tokens
-      = (jsmntok_t *)calloc (tokens.num_tokens + 1024, sizeof (jsmntok_t));
+      = (jsmntok_t *)CALLOC (tokens.num_tokens + 1024, sizeof (jsmntok_t));
   if (!tokens.tokens)
     return DWG_ERR_OUTOFMEM;
 

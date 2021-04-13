@@ -55,7 +55,7 @@ enforce_null_termination (Bit_Chain *dat, bool enforce)
   fprintf (stderr,
            "llvmfuzz_standalone: enforce libfuzzer buffer NULL termination\n");
 #endif
-  copy = malloc (dat->size + 1);
+  copy = MALLOC (dat->size + 1);
   memcpy (copy, dat->chain, dat->size);
   copy[dat->size] = '\0';
   dat->chain = copy;
@@ -74,6 +74,9 @@ LLVMFuzzerTestOneInput (const unsigned char *data, size_t size)
   int out;
 
   static char tmp_file[256];
+#ifndef STANDALONE
+  GC_INIT ();
+#endif
   dat.chain = (unsigned char *)data;
   dat.size = size;
   memset (&dwg, 0, sizeof (dwg));
@@ -178,26 +181,26 @@ LLVMFuzzerTestOneInput (const unsigned char *data, size_t size)
             break;
           }
         dwg_encode (&dwg, &out_dat);
-        free (out_dat.chain);
+        FREE (out_dat.chain);
         break;
       }
 #ifndef DISABLE_DXF
     case 1:
       dwg_write_dxf (&out_dat, &dwg);
-      free (out_dat.chain);
+      FREE (out_dat.chain);
       break;
     case 2: // experimental
       dwg_write_dxfb (&out_dat, &dwg);
-      free (out_dat.chain);
+      FREE (out_dat.chain);
       break;
 #  ifndef DISABLE_JSON
     case 3:
       dwg_write_json (&out_dat, &dwg);
-      free (out_dat.chain);
+      FREE (out_dat.chain);
       break;
     case 4:
       dwg_write_geojson (&out_dat, &dwg);
-      free (out_dat.chain);
+      FREE (out_dat.chain);
       break;
 #  endif
 #endif
@@ -228,6 +231,7 @@ usage (void)
 int
 main (int argc, char *argv[])
 {
+  GC_INIT ();
   if (argc <= 1 || !*argv[1])
     return usage ();
   /* works only on linux
@@ -264,13 +268,13 @@ main (int argc, char *argv[])
       fseek (f, 0, SEEK_SET);
       if (len <= 0)
         continue;
-      buf = (unsigned char *)malloc (len);
+      buf = (unsigned char *)MALLOC (len);
       n_read = fread (buf, 1, len, f);
       fclose (f);
       assert ((long)n_read == len);
       fprintf (stderr, "llvmfuzz_standalone %s [%zu]\n", argv[i], len);
       LLVMFuzzerTestOneInput (buf, len);
-      free (buf);
+      FREE (buf);
       // Bit_Chain dat = { 0 };
       // dat_read_file (&dat, fp, argv[i]);
       // LLVMFuzzerTestOneInput (dat.chain, dat.size);
