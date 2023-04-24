@@ -1046,11 +1046,11 @@ DWG_ENTITY (VERTEX_2D)
   SUBCLASS (AcDb2dVertex)
   PRE (R_13b1)
   {
-#ifdef IN_JSON
-    FIELD_3RD (point, 10)
-#else
+    //#ifdef IN_JSON
+    //FIELD_3RD (point, 10)
+    //#else
     FIELD_2RD (point, 10);
-#endif
+    //#endif
     if (R11OPTS (1))
       FIELD_RD (start_width, 40);
     if (R11OPTS (2))
