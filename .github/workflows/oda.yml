@@ -1,0 +1,46 @@
+name: ODA
+on:
+  push:
+    branches:
+      - master
+      - smoke/*
+      - work/oda
+
+# cancel older workflow runs
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  oda:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 50
+    strategy:
+      fail-fast: true
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        submodules: recursive
+    - name: setup-python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8
+    - uses: pyvista/setup-headless-display-action@v1
+    - run: |
+        wget -q https://download.opendesign.com/guestfiles/Demo/ODAFileConverter_QT5_lnxX64_8.3dll_24.4.deb
+        sudo dpkg -i ODAFileConverter_QT5_lnxX64_8.3dll_24.4.deb
+        sudo add-apt-repository ppa:linuxuprising/libpng12
+        sudo apt-get -y install libpng12-0 qt5dxcb-plugin
+    - run: |
+        export QT_DEBUG_PLUGINS=1
+        ODAFileConverter test/test-data . ACAD2000 DXF 0 0 example_2000.dwg 2>/dev/null || true
+        test -f example_2000.dxf || exit 1
+        echo ODAFileConverter works ok
+        export QT_DEBUG_PLUGINS=
+    - run: sh autogen.sh
+    - run: CFLAGS=-O0 ./configure --disable-bindings
+    - run: make -j
+    - run: make -j check -C programs TESTS=json.test
+      # this makes it green, but we want it red
+      #continue-on-error: true
