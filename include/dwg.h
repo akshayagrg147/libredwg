@@ -186,11 +186,11 @@ typedef unsigned char* BITCODE_TF;
 #define FORMAT_TF "\"%s\""
 typedef char* BITCODE_TV;
 #define FORMAT_TV "\"%s\""
-#define BITCODE_T16 BITCODE_TV
+#define BITCODE_T16 BITCODE_TU
 #define FORMAT_T16 FORMAT_TV
-#define BITCODE_T32 BITCODE_TV
+#define BITCODE_T32 BITCODE_TU
 #define FORMAT_T32 FORMAT_TV
-#define BITCODE_TU32 BITCODE_TV
+#define BITCODE_TU32 BITCODE_TU
 #define FORMAT_TU32 FORMAT_TV
 typedef BITCODE_DOUBLE BITCODE_BT;
 #define FORMAT_BT "%g"
@@ -206,7 +206,8 @@ typedef BITCODE_TV BITCODE_D2T;
 
 /* TODO: implement version dependent string parsing */
 /* encode codepages/utf8 */
-#define BITCODE_T  BITCODE_TV
+/* TU for cast-align */
+#define BITCODE_T  BITCODE_TU
 #ifdef HAVE_NATIVE_WCHAR2
   typedef dwg_wchar_t* BITCODE_TU; /* native UCS-2 wchar_t */
 # define FORMAT_TU "\"%ls\""
@@ -904,16 +905,16 @@ typedef struct _dwg_header_variables {
   BITCODE_RL bitsize;
   BITCODE_RC ACADMAINTVER; /*!< r13+ */
   BITCODE_BLL REQUIREDVERSIONS; /*!< r2013+ */
-  BITCODE_TV DWGCODEPAGE;  /*!< DXF 3, r11+ */
+  BITCODE_T DWGCODEPAGE;  /*!< DXF 3, r11+ */
   BITCODE_RS codepage;     /*!< <r11 */
   BITCODE_BD unit1_ratio; /* 412148564080.0 */
   BITCODE_BD unit2_ratio; /* 1.0 */
   BITCODE_BD unit3_ratio; /* 1.0 */
   BITCODE_BD unit4_ratio; /* 1.0 */
-  BITCODE_TV unit1_name; /* "" 4x pre R13/2007... */
-  BITCODE_TV unit2_name; /* "" */
-  BITCODE_TV unit3_name; /* "" */
-  BITCODE_TV unit4_name; /* "" */
+  BITCODE_T unit1_name; /* "" 4x pre R13/2007... */
+  BITCODE_T unit2_name; /* "" */
+  BITCODE_T unit3_name; /* "" */
+  BITCODE_T unit4_name; /* "" */
   BITCODE_BL unknown_8; /* 24L */
   BITCODE_BL unknown_9; /* 0L */
   BITCODE_BS unknown_10; /* 0 r13-r14 */
@@ -1015,7 +1016,7 @@ typedef struct _dwg_header_variables {
   BITCODE_BD CMLSCALE;
   BITCODE_BD CELTSCALE;
   BITCODE_BD VIEWTWIST;
-  BITCODE_TV MENU;
+  BITCODE_T MENU;
   BITCODE_TIMEBLL TDCREATE;
   BITCODE_TIMEBLL TDUPDATE;
   BITCODE_TIMEBLL TDUCREATE;
@@ -1100,8 +1101,8 @@ typedef struct _dwg_header_variables {
   BITCODE_3BD UCSORGRIGHT;
   BITCODE_3BD UCSORGFRONT;
   BITCODE_3BD UCSORGBACK;
-  BITCODE_TV DIMPOST;
-  BITCODE_TV DIMAPOST;
+  BITCODE_T DIMPOST;
+  BITCODE_T DIMAPOST;
   BITCODE_B DIMTOL;
   BITCODE_B DIMLIM;
   BITCODE_B DIMTIH;
@@ -1206,8 +1207,8 @@ typedef struct _dwg_header_variables {
   BITCODE_H DICTIONARY_NAMED_OBJECT;	/*!< code 5, the "NOD" */
   BITCODE_BS TSTACKALIGN;           /*!< r2000+ */
   BITCODE_BS TSTACKSIZE;            /*!< r2000+ */
-  BITCODE_T  HYPERLINKBASE;         /*!< r2000+ */
-  BITCODE_TV STYLESHEET;            /*!< r2000+ */
+  BITCODE_T HYPERLINKBASE;         /*!< r2000+ */
+  BITCODE_T STYLESHEET;            /*!< r2000+ */
   BITCODE_H DICTIONARY_LAYOUT;      /*!< r2000+ code 5 */
   BITCODE_H DICTIONARY_PLOTSETTINGS;   /*!< r2000+ code 5 */
   BITCODE_H DICTIONARY_PLOTSTYLENAME;  /*!< r2000+ code 5 */
@@ -1228,8 +1229,8 @@ typedef struct _dwg_header_variables {
   BITCODE_BS INSUNITS;
   BITCODE_BS CEPSNTYPE;
   BITCODE_H CPSNID;      /*!< when CEPSNTYPE = 3, code 5 */
-  BITCODE_TV FINGERPRINTGUID;
-  BITCODE_TV VERSIONGUID;
+  BITCODE_T FINGERPRINTGUID;
+  BITCODE_T VERSIONGUID;
   BITCODE_RC SORTENTS;
   BITCODE_RC INDEXCTL;
   BITCODE_RC HIDETEXT;
@@ -1240,7 +1241,7 @@ typedef struct _dwg_header_variables {
   BITCODE_BS INTERSECTIONCOLOR;
   BITCODE_RC OBSLTYPE;
   BITCODE_RC INTERSECTIONDISPLAY;
-  BITCODE_TV PROJECTNAME;
+  BITCODE_T PROJECTNAME;
   BITCODE_H BLOCK_RECORD_PSPACE;	/*!< code 5 */
   BITCODE_H BLOCK_RECORD_MSPACE;	/*!< code 5 */
   BITCODE_H LTYPE_BYLAYER;	/*!< code 5 */
@@ -2393,9 +2394,9 @@ typedef struct _dwg_object_BLOCK_HEADER
   BITCODE_B loaded_bit;   /* flag 70 bit 6 */
   BITCODE_BL num_owned;
   BITCODE_3DPOINT base_pt;
-  BITCODE_TV xref_pname;
+  BITCODE_T xref_pname;
   BITCODE_RL num_inserts;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_BL preview_size; /* no DXF. BLL? */
   BITCODE_TF preview;      /* DXF 310. Called PreviewIcon */
   BITCODE_BS insert_units;
@@ -2521,7 +2522,7 @@ typedef struct _dwg_LTYPE_dash {
 typedef struct _dwg_object_LTYPE
 {
   COMMON_TABLE_FIELDS;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_BD pattern_len;
   BITCODE_RC alignment;
   BITCODE_RC numdashes; // can be 0 in r11, even with 12 entries
@@ -2844,7 +2845,7 @@ typedef struct _dwg_object_VX_TABLE_RECORD
 typedef struct _dwg_object_GROUP
 {
   struct _dwg_object_object *parent;
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_BS unnamed;
   BITCODE_BS selectable;
   BITCODE_BL num_groups;
@@ -2866,8 +2867,8 @@ typedef struct _dwg_MLINESTYLE_line
 typedef struct _dwg_object_MLINESTYLE
 {
   struct _dwg_object_object *parent;
-  BITCODE_TV name;
-  BITCODE_TV description;
+  BITCODE_T name;
+  BITCODE_T description;
   BITCODE_BS flag;
   BITCODE_CMC fill_color;
   BITCODE_BD start_angle;
@@ -3092,7 +3093,7 @@ typedef struct _dwg_entity_HATCH
 
   BITCODE_BD elevation;
   BITCODE_BE extrusion;
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_B is_solid_fill;
   BITCODE_B is_associative;
   BITCODE_BL num_paths;
@@ -3219,7 +3220,7 @@ typedef struct _dwg_LEADER_BlockLabel
 {
   struct _dwg_entity_MULTILEADER *parent;
   BITCODE_H attdef;
-  BITCODE_TV label_text;
+  BITCODE_T label_text;
   BITCODE_BS ui_index;
   BITCODE_BD width;
 } Dwg_LEADER_BlockLabel;
@@ -3405,10 +3406,10 @@ typedef struct _dwg_object_MLEADERSTYLE
   BITCODE_B has_dogleg;
   BITCODE_BD landing_gap;
   BITCODE_BD landing_dist;
-  BITCODE_TV description;
+  BITCODE_T description;
   BITCODE_H arrow_head;
   BITCODE_BD arrow_head_size;
-  BITCODE_TV text_default;
+  BITCODE_T text_default;
   BITCODE_H text_style;
   BITCODE_BS attach_left;
   BITCODE_BS attach_right;
@@ -3672,7 +3673,7 @@ typedef struct _dwg_TableCellContent_Attr
 {
   struct _dwg_TableCellContent *parent;
   BITCODE_H attdef;
-  BITCODE_TV value;
+  BITCODE_T value;
   BITCODE_BL index;
 } Dwg_TableCellContent_Attr;
 
@@ -3683,7 +3684,7 @@ typedef struct _dwg_ContentFormat
   BITCODE_BL property_flags;
   BITCODE_BL value_data_type; /* see 20.4.98 */
   BITCODE_BL value_unit_type; /* see 20.4.98 */
-  BITCODE_TV value_format_string;
+  BITCODE_T value_format_string;
   BITCODE_BD rotation;
   BITCODE_BD block_scale;
   BITCODE_BL cell_alignment;
@@ -3722,7 +3723,7 @@ typedef struct _dwg_CellContentGeometry
 typedef struct _dwg_TableCell
 {
   BITCODE_BL flag;
-  BITCODE_TV tooltip;
+  BITCODE_T tooltip;
   BITCODE_BL customdata;
   BITCODE_BL num_customdata_items;
   Dwg_TABLE_CustomDataItem *customdata_items;
@@ -3806,7 +3807,7 @@ typedef struct _dwg_TableDataColumn
   struct _dwg_LinkedTableData *parent;
   BITCODE_T name;
   BITCODE_BL custom_data;
-  // BITCODE_TV data;
+  // BITCODE_T data;
   Dwg_CellStyle cellstyle;
   BITCODE_BL cellstyle_id;
   BITCODE_BL width;
@@ -4167,7 +4168,7 @@ typedef struct _dwg_object_DBCOLOR
 typedef struct _dwg_FIELD_ChildValue
 {
   struct _dwg_object_FIELD *parent;
-  BITCODE_TV key;   /*!< DXF 6 */
+  BITCODE_T key;   /*!< DXF 6 */
   Dwg_TABLE_value value;
 } Dwg_FIELD_ChildValue;
 
@@ -4175,8 +4176,8 @@ typedef struct _dwg_object_FIELD
 {
   struct _dwg_object_object *parent;
                     /* dxf group code */
-  BITCODE_TV id;           /* 1 */
-  BITCODE_TV code;         /* 2,3 */
+  BITCODE_T id;           /* 1 */
+  BITCODE_T code;         /* 2,3 */
   BITCODE_BL num_childs;   /* 90 */
   BITCODE_H *childs;       /* code:3, 360 */
   BITCODE_BL num_objects;  /* 97 */
@@ -4187,9 +4188,9 @@ typedef struct _dwg_object_FIELD
   BITCODE_BL field_state;       /* 94 */
   BITCODE_BL evaluation_status; /* 95 */
   BITCODE_BL evaluation_error_code; /* 96 */
-  BITCODE_TV evaluation_error_msg;  /* 300 */
+  BITCODE_T evaluation_error_msg;  /* 300 */
   Dwg_TABLE_value value;
-  BITCODE_TV value_string;        /* 301,9 */
+  BITCODE_T value_string;        /* 301,9 */
   BITCODE_BL value_string_length; /* 98 ODA bug: TV */
   BITCODE_BL num_childval;      /* 93 */
   Dwg_FIELD_ChildValue *childval;
@@ -4411,7 +4412,7 @@ typedef struct _dwg_object_SCALE
   struct _dwg_object_object *parent;
 
   BITCODE_BS flag; /* 1: is_temporary */
-  BITCODE_TV name;
+  BITCODE_T name;
   BITCODE_BD paper_units;
   BITCODE_BD drawing_units;
   BITCODE_B is_unit_scale;
@@ -9270,7 +9271,7 @@ typedef struct _dwg_AcDs_SchemaData
   BITCODE_RL num_schemas; // computed, see schidx
   Dwg_AcDs_Schema *schemas;
   BITCODE_RL num_propnames;
-  BITCODE_TV *propnames;
+  BITCODE_T *propnames;
 } Dwg_AcDs_SchemaData;
 
 typedef struct _dwg_AcDs_Search_IdIdx

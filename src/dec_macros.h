@@ -488,7 +488,7 @@
   {                                                                           \
     /* if (_obj->nam) free (_obj->nam); // preR13 add_Document defaults */    \
     SINCE (R_13b1) { _obj->nam = NULL; VECTOR_CHKCOUNT (nam, TF, len, dat) }  \
-    _obj->nam = (BITCODE_TV)bit_read_TF (dat, (size_t)len);                   \
+    _obj->nam = bit_read_TF (dat, (size_t)len);                               \
     LOG_TRACE (#nam ": \"%s\" [TFv %zu " #dxf "]", _obj->nam, (size_t)len);   \
     if (!_obj->nam)                                                           \
       return DWG_ERR_VALUEOUTOFBOUNDS;                                        \
