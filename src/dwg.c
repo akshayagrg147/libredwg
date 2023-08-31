@@ -57,6 +57,11 @@ static bool env_var_checked_p;
 #define DWG_LOGLEVEL loglevel
 #include "logging.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*------------------------------------------------------------------------------
  * Imports bypassing its headers.
  * We dont want to import in_dxf.h as it is redefining FORMAT_BD.
@@ -75,6 +80,10 @@ dwg_find_tablehandle_silent (Dwg_Data *restrict dwg, const char *restrict name,
                              const char *restrict table);
 // used in encode.c
 void dwg_set_handle_size (Dwg_Handle *restrict hdl);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*------------------------------------------------------------------------------
  * Public functions
